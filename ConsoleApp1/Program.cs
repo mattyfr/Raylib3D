@@ -5,6 +5,7 @@ using ConsoleApp1;
 using Raylib_cs;
 
 int targetFps = 60;
+int framesSinceLastShoot = 0;
 List<Bullet> bulletList = [];
 List<Blocks> blockList = [];
 
@@ -19,17 +20,21 @@ if (true)
     Blocks floor = new Blocks(); floor.pos = new Vector3(0,-2,50); floor.height = 1; floor.length = 100; floor.width = 100; floor.color = Color.Gray;
     Blocks wall1 = new Blocks(); wall1.pos = new Vector3(0,23,0); wall1.height = 50; wall1.length = 1; wall1.width = 100; wall1.color = Color.Blue;
     Blocks wall2 = new Blocks(); wall2.pos = new Vector3(0,23,100); wall2.height = 50; wall2.length = 1; wall2.width = 100; wall2.color = Color.Black;
-    Blocks wall3 = new Blocks(); wall3.pos = new Vector3(50,23,50); wall3.height = 50; wall3.length = 100; wall3.width = 1; wall3.color = Color.Red;
+    Blocks door21 = new Blocks(); door21.pos = new Vector3(50,23,22.5f); door21.height = 50; door21.length = 45; door21.width = 1; door21.color = Color.Orange;
+    Blocks door22 = new Blocks(); door22.pos = new Vector3(50,23,77.5f); door22.height = 50; door22.length = 45; door22.width = 1; door22.color = Color.Pink;
+    Blocks door23 = new Blocks(); door23.pos = new Vector3(50,28,50); door23.height = 40; door23.length = 10; door23.width = 1; door23.color = Color.Purple;
     Blocks door1 = new Blocks(); door1.pos = new Vector3(-50,23,22.5f); door1.height = 50; door1.length = 45; door1.width = 1; door1.color = Color.Orange;
     Blocks door2 = new Blocks(); door2.pos = new Vector3(-50,23,77.5f); door2.height = 50; door2.length = 45; door2.width = 1; door2.color = Color.Pink;
     Blocks door3 = new Blocks(); door3.pos = new Vector3(-50,28,50); door3.height = 40; door3.length = 10; door3.width = 1; door3.color = Color.Purple;
     blockList.Add(floor);
     blockList.Add(wall1);
     blockList.Add(wall2);
-    blockList.Add(wall3);
     blockList.Add(door1);
     blockList.Add(door2);
     blockList.Add(door3);
+    blockList.Add(door21);
+    blockList.Add(door22);
+    blockList.Add(door23);
 }
 while (!Raylib.WindowShouldClose())
 {
@@ -41,6 +46,7 @@ while (!Raylib.WindowShouldClose())
     Shoot();
     BulletController();
     Raylib.EndDrawing();
+    framesSinceLastShoot++
 }
 Camera3D Camera()
 {
@@ -104,11 +110,12 @@ void Shoot()
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
-        Bullet bullet = new Bullet();
-        bullet.pos = camera3DMain.Position;
-        bullet.path = Raylib.GetCameraForward(ref camera3DMain);
-        bullet.rotationAngle = 0;
-        bulletList.Add(bullet);
+        if (framesSinceLastShoot = targetFps/12)
+        {
+            Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain); bullet.rotationAngle = 0;
+            bulletList.Add(bullet);
+            framesSinceLastShoot = 0;
+        }
     }
 }
 void BulletController()
