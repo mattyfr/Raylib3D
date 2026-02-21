@@ -1,10 +1,9 @@
-﻿using System.Globalization;
-using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security;
+﻿using System.Numerics;
 using ConsoleApp1;
 using Raylib_cs;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using System.Runtime.InteropServices;
 
 int targetFps = 60;
 int framesSinceLastShoot = 0;
@@ -18,29 +17,24 @@ Raylib.ToggleFullscreen();
 Raylib.SetTargetFPS(targetFps);
 Camera3D camera3DMain = Camera();
 Camera2D camera2DMain = Camera2D();
-if (true)  // Generic room structure
-{
-    Blocks floor = new Blocks(); floor.pos = new Vector3(0, -2, 50); floor.height = 1; floor.length = 100; floor.width = 100; floor.isColor = false; floor.color = Shade(floor.pos);
-    Blocks wall1 = new Blocks(); wall1.pos = new Vector3(0, 23, 0); wall1.height = 50; wall1.length = 1; wall1.width = 100; wall1.isColor = false; wall1.color = Shade(wall1.pos);
-    Blocks wall2 = new Blocks(); wall2.pos = new Vector3(0, 23, 100); wall2.height = 50; wall2.length = 1; wall2.width = 100; wall2.isColor = false; wall2.color = Shade(wall2.pos);
-    Blocks door21 = new Blocks(); door21.pos = new Vector3(50, 23, 22.5f); door21.height = 50; door21.length = 45; door21.width = 1; door21.isColor = false; door21.color = Shade(door21.pos);
-    Blocks door22 = new Blocks(); door22.pos = new Vector3(50, 23, 77.5f); door22.height = 50; door22.length = 45; door22.width = 1; door22.isColor = false; door22.color = Shade(door22.pos);
-    Blocks door23 = new Blocks(); door23.pos = new Vector3(50, 28, 50); door23.height = 40; door23.length = 10; door23.width = 1; door23.isColor = false; door23.color = Shade(door23.pos);
-    Blocks door1 = new Blocks(); door1.pos = new Vector3(-50, 23, 22.5f); door1.height = 50; door1.length = 45; door1.width = 1; door1.isColor = false; door1.color = Shade(door1.pos);
-    Blocks door2 = new Blocks(); door2.pos = new Vector3(-50, 23, 77.5f); door2.height = 50; door2.length = 45; door2.width = 1; door2.isColor = false; door2.color = Shade(door2.pos);
-    Blocks door3 = new Blocks(); door3.pos = new Vector3(-50, 28, 50); door3.height = 40; door3.length = 10; door3.width = 1; door3.isColor = false; door3.color = Shade(door3.pos);
-    room.Add(floor);
-    room.Add(wall1);
-    room.Add(wall2);
-    room.Add(door1);
-    room.Add(door2);
-    room.Add(door3);
-    room.Add(door21);
-    room.Add(door22);
-    room.Add(door23);
-}
-GetEnemiesPos();
-CreateRooms();
+// if (true) 
+// {
+//     // room = 
+//     // [
+//     // new Blocks{posX = 0, posY = -2, posZ = 50, pos = new Vector3(0, -2, 50), height = 1, length = 100, width = 100, isColor = false, color = Shade(new Vector3(0, -2, 50))},
+//     // new Blocks{posX = 0, posY = 23, posZ = 0, pos = new Vector3(0, 23, 0), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 0))},
+//     // new Blocks{posX = 0, posY = 23, posZ = 100, pos = new Vector3(0, 23, 100), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 100))},
+//     // new Blocks{posX = 50, posY = 23, posZ = 22.5f, pos = new Vector3(50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 22.5f))},
+//     // new Blocks{posX = 50, posY = 23, posZ = 77.5f, pos = new Vector3(50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 77.5f))},
+//     // new Blocks{posX = 50, posY = 28, posZ = 50, pos = new Vector3(50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(50, 28, 50))},
+//     // new Blocks{posX = -50, posY = 23, posZ = 22.5f, pos = new Vector3(-50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 22.5f))},
+//     // new Blocks{posX = -50, posY = 23, posZ = 77.5f, pos = new Vector3(-50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 77.5f))},
+//     // new Blocks{posX = -50, posY = 28, posZ = 50, pos = new Vector3(-50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(-50, 28, 50))},
+//     // ];
+//     // string Json = JsonSerializer.Serialize<List<Blocks>>(room);
+//     // File.WriteAllText("a.txt", Json);
+// }
+LoadRoomFromJson();
 while (!Raylib.WindowShouldClose())
 {
     Raylib.BeginDrawing();
@@ -84,6 +78,7 @@ void Draw2D()
 {
     Raylib.DrawText("Text", 100, 100, 10, Color.Red);
     Raylib.DrawFPS(150, 150);
+    Raylib.DrawText(@$"{rooms.Count()}", 200,200,20, Color.Red);
 }
 void Movement()
 {
@@ -158,9 +153,8 @@ void DrawEnemies(int roomNumber)
 {
     foreach (var item in rooms[roomNumber].enenmies)
     {
-        Vector3 currentPosStart = new Vector3(item.pos.X + roomNumber * 100, item.pos.Y, item.pos.Z);
-        Vector3 currentPosEnd = new Vector3(currentPosStart.X, 2, currentPosStart.Z);
-        Raylib.DrawCircle3D(currentPosStart, 1, new Vector3(0, 0, 0), 0, Color.Blue);
+        item.pos = new Vector3(item.pos.X + roomNumber * 100, item.pos.Y, item.pos.Z);
+        Raylib.DrawCircle3D(item.pos, 1, new Vector3(0, 0, 0), 0, Color.Blue);
     }
 }
 void DrawBullets()
@@ -170,16 +164,9 @@ void DrawBullets()
         Raylib.DrawCircle3D(item.pos, 1, Vector3.Zero, item.rotationAngle, Color.Yellow);
     }
 }
-void GetEnemiesPos()
+Vector3 GetEnemiesPos()
 {
-    for (int i = 0; i < rooms.Count(); i++)
-    {
-        foreach (var item in rooms[i].enenmies)
-        {
-            item.pos = new Vector3(Random.Shared.Next(0, 100), 0, Random.Shared.Next(0, 100));
-        }
-    }
-
+    return new Vector3(Random.Shared.Next(0, 100), 0, Random.Shared.Next(0, 100));
 }
 void CheckForCollisions()
 {
@@ -190,7 +177,9 @@ void CheckForCollisions()
         {
             for (int k = 0; k < rooms[j].enenmies.Count(); k++)
             {
-                if (bulletList[i].pos.X + 0.5 >= rooms[j].enenmies[k].pos.X && bulletList[i].pos.X - 0.5 <= rooms[j].enenmies[k].pos.X && bulletList[i].pos.Y + 0.5 >= rooms[j].enenmies[k].pos.Y && bulletList[i].pos.Y - 0.5 <= rooms[j].enenmies[k].pos.Y && bulletList[i].pos.Y + 0.5 >= rooms[j].enenmies[k].pos.Y && bulletList[i].pos.Y - 0.5 <= rooms[j].enenmies[k].pos.Y)
+                if (bulletList[i].pos.X + 1 >= rooms[j].enenmies[k].pos.X && bulletList[i].pos.X - 1 <= rooms[j].enenmies[k].pos.X && 
+                    bulletList[i].pos.Y + 1 >= rooms[j].enenmies[k].pos.Y && bulletList[i].pos.Y - 1 <= rooms[j].enenmies[k].pos.Y && 
+                    bulletList[i].pos.Z + 1 >= rooms[j].enenmies[k].pos.Z && bulletList[i].pos.Z - 1 <= rooms[j].enenmies[k].pos.Z)
                 {
                     bulletList.RemoveAt(i);
                     rooms[j].enenmies.RemoveAt(k);
@@ -203,7 +192,8 @@ void CreateRooms()
 {
     if (DisatanceToLastRoom() >= -200)
     {
-        rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy(), new Enemy(), new Enemy()] });
+        rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}] });
+        GetEnemiesPos();
     }
 }
 int DisatanceToLastRoom()
@@ -223,4 +213,12 @@ Color Shade(Vector3 pos)
     }
     Color color = new Color((int)G, (int)G, (int)G);
     return color;
+}
+void LoadRoomFromJson()
+{
+    room = JsonSerializer.Deserialize<List<Blocks>>(File.ReadAllText("room.txt"));
+    foreach (var item in room)
+    {
+        item.pos = new Vector3(item.posX, item.posY, item.posZ);
+    }
 }
