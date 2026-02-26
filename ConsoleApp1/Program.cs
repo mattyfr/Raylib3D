@@ -17,23 +17,27 @@ Raylib.ToggleFullscreen();
 Raylib.SetTargetFPS(targetFps);
 Camera3D camera3DMain = Camera();
 Camera2D camera2DMain = Camera2D();
-// if (true) 
-// {
-//     // room = 
-//     // [
-//     // new Blocks{posX = 0, posY = -2, posZ = 50, pos = new Vector3(0, -2, 50), height = 1, length = 100, width = 100, isColor = false, color = Shade(new Vector3(0, -2, 50))},
-//     // new Blocks{posX = 0, posY = 23, posZ = 0, pos = new Vector3(0, 23, 0), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 0))},
-//     // new Blocks{posX = 0, posY = 23, posZ = 100, pos = new Vector3(0, 23, 100), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 100))},
-//     // new Blocks{posX = 50, posY = 23, posZ = 22.5f, pos = new Vector3(50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 22.5f))},
-//     // new Blocks{posX = 50, posY = 23, posZ = 77.5f, pos = new Vector3(50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 77.5f))},
-//     // new Blocks{posX = 50, posY = 28, posZ = 50, pos = new Vector3(50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(50, 28, 50))},
-//     // new Blocks{posX = -50, posY = 23, posZ = 22.5f, pos = new Vector3(-50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 22.5f))},
-//     // new Blocks{posX = -50, posY = 23, posZ = 77.5f, pos = new Vector3(-50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 77.5f))},
-//     // new Blocks{posX = -50, posY = 28, posZ = 50, pos = new Vector3(-50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(-50, 28, 50))},
-//     // ];
-//     // string Json = JsonSerializer.Serialize<List<Blocks>>(room);
-//     // File.WriteAllText("a.txt", Json);
-// }
+Wepond ChoosenWepond = new Wepond();
+AK ak47 = new AK();
+AWP awp = new AWP();
+ShootGun shootGun = new ShootGun();
+if (true) 
+{
+    room = 
+    [
+    new Blocks{posX = 0, posY = -2, posZ = 50, pos = new Vector3(0, -2, 50), height = 1, length = 100, width = 100, isColor = false, color = Shade(new Vector3(0, -2, 50))},
+    new Blocks{posX = 0, posY = 23, posZ = 0, pos = new Vector3(0, 23, 0), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 0))},
+    new Blocks{posX = 0, posY = 23, posZ = 100, pos = new Vector3(0, 23, 100), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 100))},
+    new Blocks{posX = 50, posY = 23, posZ = 22.5f, pos = new Vector3(50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 22.5f))},
+    new Blocks{posX = 50, posY = 23, posZ = 77.5f, pos = new Vector3(50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 77.5f))},
+    new Blocks{posX = 50, posY = 28, posZ = 50, pos = new Vector3(50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(50, 28, 50))},
+    new Blocks{posX = -50, posY = 23, posZ = 22.5f, pos = new Vector3(-50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 22.5f))},
+    new Blocks{posX = -50, posY = 23, posZ = 77.5f, pos = new Vector3(-50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 77.5f))},
+    new Blocks{posX = -50, posY = 28, posZ = 50, pos = new Vector3(-50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(-50, 28, 50))},
+    ];
+    string Json = JsonSerializer.Serialize<List<Blocks>>(room);
+    File.WriteAllText("room.txt", Json);
+}
 LoadRoomFromJson();
 while (!Raylib.WindowShouldClose())
 {
@@ -45,6 +49,7 @@ while (!Raylib.WindowShouldClose())
     Shoot();
     BulletController();
     CheckForCollisions();
+    ChangeWepond();
     Raylib.EndDrawing();
     framesSinceLastShoot++;
 }
@@ -76,9 +81,19 @@ void Draw3D()
 }
 void Draw2D()
 {
+    Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 5, Color.Red);
     Raylib.DrawText("Text", 100, 100, 10, Color.Red);
     Raylib.DrawFPS(150, 150);
     Raylib.DrawText(@$"{rooms.Count()}", 200,200,20, Color.Red);
+    foreach(var item in rooms)
+    {
+        Raylib.DrawText(@$"{item.enenmies.Count()}", 220,220,20, Color.RayWhite);
+    }
+    Raylib.DrawText(@$"{bulletList.Count()}",240,240,20,Color.Red);
+    Raylib.DrawText(@$"{framesSinceLastShoot}",260,260,20,Color.Red);
+    Raylib.DrawText(@$"{ChoosenWepond.cooldown}",280,280,20,Color.Red);
+    Raylib.DrawText(@$"{shootGun.cooldown}",300,300,20,Color.Red);
+    
 }
 void Movement()
 {
@@ -110,7 +125,7 @@ void Shoot()
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
-        if (framesSinceLastShoot >= targetFps / 12)
+        if (framesSinceLastShoot >= targetFps / ChoosenWepond.cooldown)
         {
             Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain); bullet.rotationAngle = 0;
             bulletList.Add(bullet);
@@ -122,7 +137,7 @@ void BulletController()
 {
     foreach (var item in bulletList)
     {
-        item.pos += item.path;
+        item.pos += item.path * 4;
     }
 }
 void DrawRooms()
@@ -143,9 +158,7 @@ void DrawRoomStructure(int roomNumber)
         {
             item.color = Shade(currentPos);
         }
-        else
-        {
-        }
+        else{}
         Raylib.DrawCube(currentPos, item.width, item.height, item.length, item.color);
     }
 }
@@ -153,20 +166,20 @@ void DrawEnemies(int roomNumber)
 {
     foreach (var item in rooms[roomNumber].enenmies)
     {
-        item.pos = new Vector3(item.pos.X + roomNumber * 100, item.pos.Y, item.pos.Z);
-        Raylib.DrawCircle3D(item.pos, 1, new Vector3(0, 0, 0), 0, Color.Blue);
+        Vector3 currentPos = new Vector3(item.pos.X + roomNumber * 100, item.pos.Y, item.pos.Z);
+        Raylib.DrawCircle3D(currentPos, 1, new Vector3(0, 0, 0), 0, Color.Blue);
     }
 }
 void DrawBullets()
 {
     foreach (var item in bulletList)
     {
-        Raylib.DrawCircle3D(item.pos, 1, Vector3.Zero, item.rotationAngle, Color.Yellow);
+        Raylib.DrawCircle3D(item.pos, 0.05f, Vector3.Zero, item.rotationAngle, Color.Yellow);
     }
 }
 Vector3 GetEnemiesPos()
 {
-    return new Vector3(Random.Shared.Next(0, 100), 0, Random.Shared.Next(0, 100));
+    return new Vector3(Random.Shared.Next(0, 50), 0, Random.Shared.Next(0, 100));
 }
 void CheckForCollisions()
 {
@@ -177,11 +190,10 @@ void CheckForCollisions()
         {
             for (int k = 0; k < rooms[j].enenmies.Count(); k++)
             {
-                if (bulletList[i].pos.X + 1 >= rooms[j].enenmies[k].pos.X && bulletList[i].pos.X - 1 <= rooms[j].enenmies[k].pos.X && 
-                    bulletList[i].pos.Y + 1 >= rooms[j].enenmies[k].pos.Y && bulletList[i].pos.Y - 1 <= rooms[j].enenmies[k].pos.Y && 
-                    bulletList[i].pos.Z + 1 >= rooms[j].enenmies[k].pos.Z && bulletList[i].pos.Z - 1 <= rooms[j].enenmies[k].pos.Z)
+                Vector3 enemyPos = new Vector3(rooms[j].enenmies[k].pos.X + 100 * j, rooms[j].enenmies[k].pos.Y, rooms[j].enenmies[k].pos.Z);
+                if (Raylib.CheckCollisionSpheres(bulletList[i].pos, 0.5f, enemyPos, 1f))
                 {
-                    bulletList.RemoveAt(i);
+                    bulletList.RemoveAt(i--);
                     rooms[j].enenmies.RemoveAt(k);
                 }
             }
@@ -193,7 +205,6 @@ void CreateRooms()
     if (DisatanceToLastRoom() >= -200)
     {
         rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}] });
-        GetEnemiesPos();
     }
 }
 int DisatanceToLastRoom()
@@ -220,5 +231,35 @@ void LoadRoomFromJson()
     foreach (var item in room)
     {
         item.pos = new Vector3(item.posX, item.posY, item.posZ);
+    }
+}
+void ChangeWepond()
+{
+    if (Raylib.IsKeyDown(KeyboardKey.Z))
+    {
+        ChoosenWepond.cooldown = 10;
+        ChoosenWepond.Accuracy = 0.035f;
+        ChoosenWepond.bulletsPerShoot = 1;
+        ChoosenWepond.magSize = 30;
+        ChoosenWepond.reloadTime = 0.125f;
+        ChoosenWepond.damage = 51;
+        
+    }
+    if (Raylib.IsKeyDown(KeyboardKey.X))
+    {
+        ChoosenWepond.cooldown = 0.75f;
+        ChoosenWepond.Accuracy = 0;
+        ChoosenWepond.bulletsPerShoot = 1;
+        ChoosenWepond.magSize = 5;
+        ChoosenWepond.reloadTime = 0.15f;
+        ChoosenWepond.damage = 101;
+    }
+    if (Raylib.IsKeyDown(KeyboardKey.C))
+    {
+        ChoosenWepond.cooldown = 7;
+        ChoosenWepond.Accuracy = 0.05f;
+        ChoosenWepond.bulletsPerShoot = 5;
+        ChoosenWepond.magSize = 7;
+        ChoosenWepond.reloadTime = 0.135f;
     }
 }
