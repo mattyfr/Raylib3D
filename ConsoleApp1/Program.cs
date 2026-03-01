@@ -7,6 +7,8 @@ using System.Runtime.InteropServices;
 
 int targetFps = 60;
 int framesSinceLastShoot = 0;
+int bulletsInMag = 0;
+float reloadCooldown = 0;
 List<Bullet> bulletList = [];
 List<Blocks> blockList = [];
 List<Blocks> room = [];
@@ -81,19 +83,11 @@ void Draw3D()
 }
 void Draw2D()
 {
-    Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 5, Color.Red);
+    DrawCrossHair();
+    DrawWepondInfo();
     Raylib.DrawText("Text", 100, 100, 10, Color.Red);
     Raylib.DrawFPS(150, 150);
     Raylib.DrawText(@$"{rooms.Count()}", 200,200,20, Color.Red);
-    foreach(var item in rooms)
-    {
-        Raylib.DrawText(@$"{item.enenmies.Count()}", 220,220,20, Color.RayWhite);
-    }
-    Raylib.DrawText(@$"{bulletList.Count()}",240,240,20,Color.Red);
-    Raylib.DrawText(@$"{framesSinceLastShoot}",260,260,20,Color.Red);
-    Raylib.DrawText(@$"{ChoosenWepond.cooldown}",280,280,20,Color.Red);
-    Raylib.DrawText(@$"{shootGun.cooldown}",300,300,20,Color.Red);
-    
 }
 void Movement()
 {
@@ -125,12 +119,20 @@ void Shoot()
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
-        if (framesSinceLastShoot >= targetFps / ChoosenWepond.cooldown)
+        if (framesSinceLastShoot >= Raylib.GetFPS() / ChoosenWepond.cooldown && bulletsInMag > 0)
         {
-            Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain); bullet.rotationAngle = 0;
-            bulletList.Add(bullet);
+            for(int i = 0; i < ChoosenWepond.bulletsPerShoot; i++)
+            {
+                Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain) + GetBulletAccuracy(); bullet.rotationAngle = 0;
+                bulletList.Add(bullet);
+            }
             framesSinceLastShoot = 0;
+            bulletsInMag--;
         }
+    }
+    if (bulletsInMag == 0)
+    {
+        Reload();
     }
 }
 void BulletController()
@@ -195,6 +197,7 @@ void CheckForCollisions()
                 {
                     bulletList.RemoveAt(i--);
                     rooms[j].enenmies.RemoveAt(k);
+                    break;
                 }
             }
         }
@@ -237,29 +240,65 @@ void ChangeWepond()
 {
     if (Raylib.IsKeyDown(KeyboardKey.Z))
     {
+        ChoosenWepond.wepondName = "Ak-47";
         ChoosenWepond.cooldown = 10;
         ChoosenWepond.Accuracy = 0.035f;
         ChoosenWepond.bulletsPerShoot = 1;
         ChoosenWepond.magSize = 30;
-        ChoosenWepond.reloadTime = 0.125f;
+        ChoosenWepond.reloadTime = 0.225f;
         ChoosenWepond.damage = 51;
-        
+        reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.X))
     {
+        ChoosenWepond.wepondName = "AWP";
         ChoosenWepond.cooldown = 0.75f;
         ChoosenWepond.Accuracy = 0;
         ChoosenWepond.bulletsPerShoot = 1;
         ChoosenWepond.magSize = 5;
-        ChoosenWepond.reloadTime = 0.15f;
+        ChoosenWepond.reloadTime = 0.25f;
         ChoosenWepond.damage = 101;
+        reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.C))
     {
+        ChoosenWepond.wepondName = "ShootGun";
         ChoosenWepond.cooldown = 7;
         ChoosenWepond.Accuracy = 0.05f;
         ChoosenWepond.bulletsPerShoot = 5;
         ChoosenWepond.magSize = 7;
-        ChoosenWepond.reloadTime = 0.135f;
+        ChoosenWepond.reloadTime = 0.235f;
+        reloadCooldown = 0;
     }
+}
+Vector3 GetBulletAccuracy()
+{
+    Vector3 offsetVector = new Vector3(Random.Shared.Next(-5, 6),Random.Shared.Next(-5, 6),Random.Shared.Next(-5, 6));
+    return offsetVector / 20 * ChoosenWepond.Accuracy;
+}
+void Reload()
+{
+    if (reloadCooldown == 0 && bulletsInMag == 0)
+    {
+        reloadCooldown = Raylib.GetFPS() / ChoosenWepond.reloadTime;
+    }
+    else
+    {
+        reloadCooldown--;
+        Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X,(int)Raylib.GetScreenCenter().Y, 30, Color.Red);
+    }
+    if (reloadCooldown <= 2)
+    {
+        bulletsInMag = ChoosenWepond.magSize;
+        reloadCooldown = 0;
+    }
+}
+void DrawCrossHair()
+{
+    Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 1, Color.Red);
+}
+void DrawWepondInfo()
+{
+    Raylib.DrawText(@$"{ChoosenWepond.wepondName}", (int)(Raylib.GetScreenCenter().X * 1.5f), (int)(Raylib.GetScreenCenter().Y * 1.5f), 20, Color.Pink);
+    Raylib.DrawText(@$"{bulletsInMag} / {ChoosenWepond.magSize}", (int)(Raylib.GetScreenCenter().X * 1.5f), (int)(Raylib.GetScreenCenter().Y * 1.55f), 20, Color.Pink);
 }

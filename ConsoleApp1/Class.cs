@@ -45,8 +45,9 @@ public class Room
 }
 public class Wepond
 {
+    public string wepondName;
     public float cooldown;
-    public float magSize;
+    public int magSize;
     public float reloadTime;
     public float bulletsPerShoot;
     public float Accuracy;
@@ -54,8 +55,9 @@ public class Wepond
 }
 public class AK
 {
+    public string wepondName = "Ak-47";
     public float cooldown = 10;
-    public float magSize = 30;
+    public int magSize = 30;
     public float reloadTime = 0.125f;
     public float bulletsPerShoot = 1;
     public float Accuracy = 0.035f;
@@ -63,8 +65,9 @@ public class AK
 }
 public class AWP
 {
+    public string wepondName = "AWP";
     public float cooldown = 2;
-    public float magSize = 5;
+    public int magSize = 5;
     public float reloadTime = 0.15f;
     public float bulletsPerShoot = 1;
     public float Accuracy = 0;
@@ -72,8 +75,9 @@ public class AWP
 }
 public class ShootGun
 {
+    public string wepondName = "ShootGun";
     public float cooldown = 7;
-    public float magSize = 7; 
+    public int magSize = 7; 
     public float reloadTime = 0.135f;
     public float bulletsPerShoot = 5;
     public float Accuracy = 0.05f;
