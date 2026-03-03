@@ -48,36 +48,40 @@ public class Wepond
     public string wepondName;
     public float cooldown;
     public int magSize;
+    public int bulletsInMag;
     public float reloadTime;
     public float bulletsPerShoot;
     public float Accuracy;
     public float damage;
 }
-public class AK
+public class AK:Wepond
 {
     public string wepondName = "Ak-47";
     public float cooldown = 10;
     public int magSize = 30;
+    public int bulletsInMag = 30;
     public float reloadTime = 0.125f;
     public float bulletsPerShoot = 1;
     public float Accuracy = 0.035f;
     public float damage = 51;
 }
-public class AWP
+public class AWP:Wepond
 {
     public string wepondName = "AWP";
     public float cooldown = 2;
     public int magSize = 5;
+    public int bulletsInMag = 5;
     public float reloadTime = 0.15f;
     public float bulletsPerShoot = 1;
     public float Accuracy = 0;
     public float damage = 101;
 }
-public class ShootGun
+public class ShootGun:Wepond
 {
     public string wepondName = "ShootGun";
     public float cooldown = 7;
     public int magSize = 7; 
+    public int bulletsInMag = 7;
     public float reloadTime = 0.135f;
     public float bulletsPerShoot = 5;
     public float Accuracy = 0.05f;
