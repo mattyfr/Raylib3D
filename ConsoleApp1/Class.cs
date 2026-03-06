@@ -32,6 +32,7 @@ public class Bullet
     public Vector3 pos;
     public Vector3 path; 
     public float rotationAngle;
+    public float framesSinceFired;
 }
 public class Enemy()
 {

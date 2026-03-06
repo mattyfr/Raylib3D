@@ -40,7 +40,7 @@ ShootGun shootGun = new ShootGun();
 //     string Json = JsonSerializer.Serialize<List<Blocks>>(room);
 //     File.WriteAllText("room.txt", Json);
 // }
-LoadRoomFromJson(room);
+room = LoadRoomFromJson(room);
 while (!Raylib.WindowShouldClose())
 {
     Raylib.BeginDrawing();
@@ -48,9 +48,8 @@ while (!Raylib.WindowShouldClose())
     Draw2D(rooms, bulletList, ChoosenWepond);
     camera3DMain = Movement(camera3DMain);
     LookAround();
-    (framesSinceLastShoot,bulletsInMag) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletsInMag, bulletList, reloadCooldown);
-    bulletList = BulletController(bulletList, camera3DMain);
-    CheckForCollisions(bulletList, rooms);
+    (framesSinceLastShoot, bulletsInMag, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletsInMag, bulletList, reloadCooldown);
+    bulletList = BulletController(bulletList, camera3DMain, rooms);
     reloadCooldown = ChangeWepond(ChoosenWepond, ak47, awp, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
     Raylib.EndDrawing();
@@ -88,8 +87,8 @@ static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepo
     DrawWepondInfo(ChoosenWepond);
     Raylib.DrawText("Text", 100, 100, 10, Color.Red);
     Raylib.DrawFPS(150, 150);
-    Raylib.DrawText(@$"{rooms.Count()}", 200,200,20, Color.Red);
-    Raylib.DrawText(@$"{bulletList.Count()}", 250,250,20, Color.Red);
+    Raylib.DrawText(@$"{rooms.Count()}", 200, 200, 20, Color.Red);
+    Raylib.DrawText(@$"{bulletList.Count()}", 250, 250, 20, Color.Red);
 }
 static Camera3D Movement(Camera3D camera3DMain)
 {
@@ -118,39 +117,44 @@ void LookAround()
     Raylib.CameraPitch(ref camera3DMain, mouseMovement.Y / -360, true, true, false);
     Console.WriteLine(camera3DMain.Target);
 }
-static (int,int) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, int bulletsInMag, List<Bullet> bulletList, float reloadCooldown)
+static (int, int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, int bulletsInMag, List<Bullet> bulletList, float reloadCooldown)
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
         if (framesSinceLastShoot >= Raylib.GetFPS() / ChoosenWepond.cooldown && ChoosenWepond.bulletsInMag > 0)
         {
-            for(int i = 0; i < ChoosenWepond.bulletsPerShoot; i++)
+            for (int i = 0; i < ChoosenWepond.bulletsPerShoot; i++)
             {
-                Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain) + GetBulletAccuracy(ChoosenWepond); bullet.rotationAngle = 0;
+                Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain) + GetBulletAccuracy(ChoosenWepond); bullet.rotationAngle = 0; bullet.framesSinceFired = 0;
                 bulletList.Add(bullet);
             }
             framesSinceLastShoot = 0;
-            bulletsInMag--;
+            ChoosenWepond.bulletsInMag--;
         }
     }
     if (ChoosenWepond.bulletsInMag == 0)
     {
-        reloadCooldown = Reload(reloadCooldown, ChoosenWepond);
+        (reloadCooldown, ChoosenWepond) = Reload(reloadCooldown, ChoosenWepond);
     }
-    return (framesSinceLastShoot,bulletsInMag);
+    return (framesSinceLastShoot, bulletsInMag, ChoosenWepond, reloadCooldown);
 }
-static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DMain)
+static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DMain, List<Room> rooms)
 {
-    foreach (var item in bulletList)
+    for (int i = 0; i < 5; i++)
     {
-        item.pos += item.path * 4;
+        foreach (var item in bulletList)
+        {
+            item.pos += item.path;
+            item.framesSinceFired += 0.25f;
+        }
+        (bulletList,rooms) = CheckForCollisions(bulletList, rooms);
+        bulletList = RemoveFarAwayBullets(bulletList);
     }
-    bulletList = RemoveFarAwayBullets(bulletList, camera3DMain);
     return bulletList;
 }
 static void DrawRooms(List<Room> rooms, Camera3D camera3DMain)
 {
-    for(int roomNumber = 0; roomNumber < rooms.Count(); roomNumber++)
+    for (int roomNumber = 0; roomNumber < rooms.Count(); roomNumber++)
     {
         DrawRoomStructure(roomNumber, rooms, camera3DMain);
         DrawEnemies(roomNumber, rooms);
@@ -165,7 +169,7 @@ static void DrawRoomStructure(int roomNumber, List<Room> rooms, Camera3D camera3
         {
             item.color = Shade(currentPos, camera3DMain);
         }
-        else{}
+        else { }
         Raylib.DrawCube(currentPos, item.width, item.height, item.length, item.color);
     }
 }
@@ -188,9 +192,10 @@ static Vector3 GetEnemiesPos()
 {
     return new Vector3(Random.Shared.Next(0, 50), 0, Random.Shared.Next(0, 100));
 }
-static void CheckForCollisions(List<Bullet> bulletList, List<Room> rooms)
+static (List<Bullet>, List<Room>) CheckForCollisions(List<Bullet> bulletList, List<Room> rooms)
 {
-
+    List<int> bulletsToRemove = [];
+    List<(int,int)> enemiesToRemove = [];
     for (int i = 0; i < bulletList.Count(); i++)
     {
         for (int j = 0; j < rooms.Count(); j++)
@@ -200,19 +205,29 @@ static void CheckForCollisions(List<Bullet> bulletList, List<Room> rooms)
                 Vector3 enemyPos = new Vector3(rooms[j].enenmies[k].pos.X + 100 * j, rooms[j].enenmies[k].pos.Y, rooms[j].enenmies[k].pos.Z);
                 if (Raylib.CheckCollisionSpheres(bulletList[i].pos, 0.5f, enemyPos, 1f))
                 {
-                    bulletList.RemoveAt(i--);
-                    rooms[j].enenmies.RemoveAt(k);
-                    break;
+                    bulletsToRemove.Add(i);
+                    enemiesToRemove.Add((j,k));
                 }
             }
         }
     }
+    bulletsToRemove = bulletsToRemove.Distinct().ToList();
+    enemiesToRemove = enemiesToRemove.Distinct().ToList();
+    foreach(var item in bulletsToRemove)
+    {
+        bulletList.RemoveAt(item);
+    }
+    foreach(var item in enemiesToRemove)
+    {
+        rooms[item.Item1].enenmies.RemoveAt(item.Item2);
+    }
+    return (bulletList, rooms);
 }
 static List<Room> CreateRooms(List<Room> rooms, Camera3D camera3DMain, List<Blocks> room)
 {
     if (DisatanceToLastRoom(rooms, camera3DMain) >= -200)
     {
-        rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}, new Enemy{pos = GetEnemiesPos()}] });
+        rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy { pos = GetEnemiesPos() }, new Enemy { pos = GetEnemiesPos() }, new Enemy { pos = GetEnemiesPos() }] });
     }
     return rooms;
 }
@@ -228,8 +243,8 @@ static int DisatanceBetweenObjects(Vector3 pos1, Vector3 pos2)
     double z1 = (int)pos1.Y;
     double x2 = (int)pos2.X;
     double y2 = (int)pos2.Z;
-    double z2 = (int)pos2.Y; 
-    double distance = Math.Sqrt((x1 * x1) + (y1 * 1) + (z1 + z1)) - Math.Sqrt((x2 * x2) + (y2 * y2) + (z2 + z2));
+    double z2 = (int)pos2.Y;
+    double distance = Math.Sqrt((x1 * x1) + (y1 * y1) + (z1 + z1)) - Math.Sqrt((x2 * x2) + (y2 * y2) + (z2 + z2));
     return (int)distance;
 }
 static Color Shade(Vector3 pos, Camera3D camera3DMain)
@@ -292,10 +307,10 @@ static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp, float reloadCo
 }
 static Vector3 GetBulletAccuracy(Wepond ChoosenWepond)
 {
-    Vector3 offsetVector = new Vector3(Random.Shared.Next(-5, 6),Random.Shared.Next(-5, 6),Random.Shared.Next(-5, 6));
+    Vector3 offsetVector = new Vector3(Random.Shared.Next(-5, 6), Random.Shared.Next(-5, 6), Random.Shared.Next(-5, 6));
     return offsetVector / 20 * ChoosenWepond.Accuracy;
 }
-static float Reload(float reloadCooldown, Wepond ChoosenWepond)
+static (float, Wepond) Reload(float reloadCooldown, Wepond ChoosenWepond)
 {
     if (reloadCooldown == 0 && ChoosenWepond.bulletsInMag == 0)
     {
@@ -304,14 +319,14 @@ static float Reload(float reloadCooldown, Wepond ChoosenWepond)
     else
     {
         reloadCooldown--;
-        Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X,(int)Raylib.GetScreenCenter().Y, 30, Color.Red);
+        Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 30, Color.Red);
     }
     if (reloadCooldown <= 2)
     {
         ChoosenWepond.bulletsInMag = ChoosenWepond.magSize;
         reloadCooldown = 0;
     }
-    return reloadCooldown;
+    return (reloadCooldown, ChoosenWepond);
 }
 static void DrawCrossHair()
 {
@@ -322,21 +337,24 @@ static void DrawWepondInfo(Wepond ChoosenWepond)
     Raylib.DrawText(@$"{ChoosenWepond.wepondName}", (int)(Raylib.GetScreenCenter().X * 1.5f), (int)(Raylib.GetScreenCenter().Y * 1.5f), 20, Color.Pink);
     Raylib.DrawText(@$"{ChoosenWepond.bulletsInMag} / {ChoosenWepond.magSize}", (int)(Raylib.GetScreenCenter().X * 1.5f), (int)(Raylib.GetScreenCenter().Y * 1.55f), 20, Color.Pink);
 }
-static List<Bullet> RemoveFarAwayBullets(List<Bullet> bulletList, Camera3D camera3DMain){
-    for(int i = 0; i > bulletList.Count; i++)
+static List<Bullet> RemoveFarAwayBullets(List<Bullet> bulletList)
+{
+    for(int i = 0; i < bulletList.Count(); i++)
     {
-        if (Math.Abs(DisatanceBetweenObjects(camera3DMain.Position, bulletList[i].pos)) <= 150)
+        if(bulletList[i].framesSinceFired >= Raylib.GetFPS() * 3)
         {
             bulletList.RemoveAt(i);
         }
     }
     return bulletList;
-} 
+}
 static void Log(string text)
 {
-    if(!File.Exists("Log.txt"))
+    if (!File.Exists(@"log.txt"))
     {
-        var log = File.Create("Log.txt");
+        var log = File.Create(@"\log.txt");
         log.Close();
     }
+    text = @$"{File.ReadAllText(@"log.txt")}{text}";
+    File.WriteAllText(@"log.txt", text);
 }
