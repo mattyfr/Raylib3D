@@ -7,7 +7,6 @@ using System.Runtime.InteropServices;
 
 int targetFps = 60;
 int framesSinceLastShoot = 0;
-int bulletsInMag = 0;
 float reloadCooldown = 0;
 List<Bullet> bulletList = [];
 List<Blocks> blockList = [];
@@ -48,9 +47,9 @@ while (!Raylib.WindowShouldClose())
     Draw2D(rooms, bulletList, ChoosenWepond);
     camera3DMain = Movement(camera3DMain);
     LookAround();
-    (framesSinceLastShoot, bulletsInMag, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletsInMag, bulletList, reloadCooldown);
-    bulletList = BulletController(bulletList, camera3DMain, rooms);
-    reloadCooldown = ChangeWepond(ChoosenWepond, ak47, awp, reloadCooldown);
+    (framesSinceLastShoot, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
+    bulletList = BulletController(bulletList, camera3DMain, rooms, ChoosenWepond);
+    reloadCooldown = ChangeWepond(ChoosenWepond, ak47, awp, shootGun, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
     Raylib.EndDrawing();
     framesSinceLastShoot++;
@@ -117,7 +116,7 @@ void LookAround()
     Raylib.CameraPitch(ref camera3DMain, mouseMovement.Y / -360, true, true, false);
     Console.WriteLine(camera3DMain.Target);
 }
-static (int, int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, int bulletsInMag, List<Bullet> bulletList, float reloadCooldown)
+static (int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, float reloadCooldown)
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
@@ -132,13 +131,13 @@ static (int, int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMa
             ChoosenWepond.bulletsInMag--;
         }
     }
-    if (ChoosenWepond.bulletsInMag == 0)
+    if (ChoosenWepond.bulletsInMag >= 0)
     {
         (reloadCooldown, ChoosenWepond) = Reload(reloadCooldown, ChoosenWepond);
     }
-    return (framesSinceLastShoot, bulletsInMag, ChoosenWepond, reloadCooldown);
+    return (framesSinceLastShoot, ChoosenWepond, reloadCooldown);
 }
-static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DMain, List<Room> rooms)
+static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DMain, List<Room> rooms, Wepond ChoosenWepond)
 {
     for (int i = 0; i < 5; i++)
     {
@@ -147,7 +146,7 @@ static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DM
             item.pos += item.path;
             item.framesSinceFired += 0.25f;
         }
-        (bulletList,rooms) = CheckForCollisions(bulletList, rooms);
+        (bulletList,rooms) = CheckForCollisionsBulletToEnemy(bulletList, rooms, ChoosenWepond);
         bulletList = RemoveFarAwayBullets(bulletList);
     }
     return bulletList;
@@ -179,7 +178,12 @@ static void DrawEnemies(int roomNumber, List<Room> rooms)
     {
         Vector3 currentPos = new Vector3(item.pos.X + roomNumber * 100, item.pos.Y, item.pos.Z);
         Raylib.DrawCircle3D(currentPos, 1, new Vector3(0, 0, 0), 0, Color.Blue);
+        DrawEnemiesHP(item, currentPos);
     }
+}
+static void DrawEnemiesHP(Enemy item,Vector3 currenpos)
+{
+    Raylib.DrawCube(currenpos, 0.1f, 1f, item.hp/50f, Color.Black);
 }
 static void DrawBullets(List<Bullet> bulletList)
 {
@@ -192,7 +196,7 @@ static Vector3 GetEnemiesPos()
 {
     return new Vector3(Random.Shared.Next(0, 50), 0, Random.Shared.Next(0, 100));
 }
-static (List<Bullet>, List<Room>) CheckForCollisions(List<Bullet> bulletList, List<Room> rooms)
+static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> bulletList, List<Room> rooms, Wepond choosenWepond)
 {
     List<int> bulletsToRemove = [];
     List<(int,int)> enemiesToRemove = [];
@@ -219,7 +223,14 @@ static (List<Bullet>, List<Room>) CheckForCollisions(List<Bullet> bulletList, Li
     }
     foreach(var item in enemiesToRemove)
     {
-        rooms[item.Item1].enenmies.RemoveAt(item.Item2);
+        if(rooms[item.Item1].enenmies[item.Item2].hp - choosenWepond.damage <= 0)
+        {
+            rooms[item.Item1].enenmies.RemoveAt(item.Item2);
+        }
+        else
+        {
+            rooms[item.Item1].enenmies[item.Item2].hp -= choosenWepond.damage;
+        }
     }
     return (bulletList, rooms);
 }
@@ -227,7 +238,12 @@ static List<Room> CreateRooms(List<Room> rooms, Camera3D camera3DMain, List<Bloc
 {
     if (DisatanceToLastRoom(rooms, camera3DMain) >= -200)
     {
-        rooms.Add(new Room { roomStructure = room, enenmies = [new Enemy { pos = GetEnemiesPos() }, new Enemy { pos = GetEnemiesPos() }, new Enemy { pos = GetEnemiesPos() }] });
+        rooms.Add(new Room { roomStructure = room, enenmies = 
+        [
+        new Enemy { pos = GetEnemiesPos(), hp = 100}, 
+        new Enemy { pos = GetEnemiesPos(), hp = 100}, 
+        new Enemy { pos = GetEnemiesPos(), hp = 100}
+        ] });
     }
     return rooms;
 }
@@ -269,7 +285,7 @@ static List<Blocks> LoadRoomFromJson(List<Blocks> room)
     }
     return room;
 }
-static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp, float reloadCooldown)
+static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp,ShootGun shootGun ,float reloadCooldown)
 {
     if (Raylib.IsKeyDown(KeyboardKey.Z))
     {
@@ -280,6 +296,7 @@ static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp, float reloadCo
         ChoosenWepond.magSize = ak47.magSize;
         ChoosenWepond.reloadTime = ak47.reloadTime;
         ChoosenWepond.damage = ak47.damage;
+        ChoosenWepond.bulletsInMag = ak47.bulletsInMag;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.X))
@@ -291,16 +308,18 @@ static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp, float reloadCo
         ChoosenWepond.magSize = awp.magSize;
         ChoosenWepond.reloadTime = awp.reloadTime;
         ChoosenWepond.damage = awp.damage;
+        ChoosenWepond.bulletsInMag = awp.bulletsInMag;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.C))
     {
-        ChoosenWepond.wepondName = "ShootGun";
-        ChoosenWepond.cooldown = 7;
-        ChoosenWepond.Accuracy = 0.05f;
-        ChoosenWepond.bulletsPerShoot = 5;
-        ChoosenWepond.magSize = 7;
-        ChoosenWepond.reloadTime = 0.235f;
+        ChoosenWepond.wepondName = shootGun.wepondName;
+        ChoosenWepond.cooldown = shootGun.cooldown;
+        ChoosenWepond.Accuracy = shootGun.Accuracy;
+        ChoosenWepond.bulletsPerShoot = shootGun.bulletsPerShoot;
+        ChoosenWepond.magSize = shootGun.magSize;
+        ChoosenWepond.reloadTime = shootGun.reloadTime;
+        ChoosenWepond.bulletsInMag = shootGun.bulletsInMag;
         reloadCooldown = 0;
     }
     return reloadCooldown;
@@ -316,7 +335,7 @@ static (float, Wepond) Reload(float reloadCooldown, Wepond ChoosenWepond)
     {
         reloadCooldown = Raylib.GetFPS() / ChoosenWepond.reloadTime;
     }
-    else
+    else if (!(reloadCooldown == 0) && ChoosenWepond.bulletsInMag == 0)
     {
         reloadCooldown--;
         Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 30, Color.Red);

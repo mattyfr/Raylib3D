@@ -37,6 +37,7 @@ public class Bullet
 public class Enemy()
 {
     public Vector3 pos;
+    public float hp;
     public Color color;
 }
 public class Room
@@ -57,7 +58,7 @@ public class Wepond
 }
 public class AK:Wepond
 {
-    public string wepondName = "Ak-47";
+    public string wepondName = "Ak-67";
     public float cooldown = 10;
     public int magSize = 30;
     public int bulletsInMag = 30;
