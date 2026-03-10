@@ -217,9 +217,10 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
     }
     bulletsToRemove = bulletsToRemove.Distinct().ToList();
     enemiesToRemove = enemiesToRemove.Distinct().ToList();
-    foreach(var item in bulletsToRemove)
+    
+    for(int i = 0; i < bulletsToRemove.Count(); i++)
     {
-        bulletList.RemoveAt(item);
+        bulletList = RemoveBullets(bulletList, i);
     }
     foreach(var item in enemiesToRemove)
     {
@@ -251,17 +252,6 @@ static int DisatanceToLastRoom(List<Room> rooms, Camera3D camera3DMain)
 {
     int roomAmount = rooms.Count();
     return (int)camera3DMain.Position.X - roomAmount * 100;
-}
-static int DisatanceBetweenObjects(Vector3 pos1, Vector3 pos2)
-{
-    double x1 = (int)pos1.X;
-    double y1 = (int)pos1.Z;
-    double z1 = (int)pos1.Y;
-    double x2 = (int)pos2.X;
-    double y2 = (int)pos2.Z;
-    double z2 = (int)pos2.Y;
-    double distance = Math.Sqrt((x1 * x1) + (y1 * y1) + (z1 + z1)) - Math.Sqrt((x2 * x2) + (y2 * y2) + (z2 + z2));
-    return (int)distance;
 }
 static Color Shade(Vector3 pos, Camera3D camera3DMain)
 {
@@ -333,19 +323,24 @@ static (float, Wepond) Reload(float reloadCooldown, Wepond ChoosenWepond)
 {
     if (reloadCooldown == 0 && ChoosenWepond.bulletsInMag == 0)
     {
-        reloadCooldown = Raylib.GetFPS() / ChoosenWepond.reloadTime;
+        reloadCooldown = StartReload(ChoosenWepond);
     }
     else if (!(reloadCooldown == 0) && ChoosenWepond.bulletsInMag == 0)
     {
         reloadCooldown--;
         Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 30, Color.Red);
     }
-    if (reloadCooldown <= 2)
+    if (reloadCooldown < 2 && reloadCooldown > 0)
     {
         ChoosenWepond.bulletsInMag = ChoosenWepond.magSize;
         reloadCooldown = 0;
     }
     return (reloadCooldown, ChoosenWepond);
+}
+static float StartReload(Wepond ChoosenWepond)
+{
+    float reloadCooldown = Raylib.GetFPS() / ChoosenWepond.reloadTime;
+    return reloadCooldown;
 }
 static void DrawCrossHair()
 {
@@ -362,18 +357,35 @@ static List<Bullet> RemoveFarAwayBullets(List<Bullet> bulletList)
     {
         if(bulletList[i].framesSinceFired >= Raylib.GetFPS() * 3)
         {
-            bulletList.RemoveAt(i);
+            bulletList = RemoveBullets(bulletList, i);
         }
     }
     return bulletList;
 }
-static void Log(string text)
+static List<Bullet> RemoveBullets(List<Bullet> bulletList, int index)
 {
-    if (!File.Exists(@"log.txt"))
-    {
-        var log = File.Create(@"\log.txt");
-        log.Close();
-    }
-    text = @$"{File.ReadAllText(@"log.txt")}{text}";
-    File.WriteAllText(@"log.txt", text);
+    bulletList.RemoveAt(index);
+    return bulletList;
 }
+// unused functions
+// static int DisatanceBetweenObjects(Vector3 pos1, Vector3 pos2)
+// {
+//     double x1 = (int)pos1.X;
+//     double y1 = (int)pos1.Z;
+//     double z1 = (int)pos1.Y;
+//     double x2 = (int)pos2.X;
+//     double y2 = (int)pos2.Z;
+//     double z2 = (int)pos2.Y;
+//     double distance = Math.Sqrt((x1 * x1) + (y1 * y1) + (z1 + z1)) - Math.Sqrt((x2 * x2) + (y2 * y2) + (z2 + z2));
+//     return (int)distance;
+// }
+// static void Log(string text)
+// {
+//     if (!File.Exists(@"log.txt"))
+//     {
+//         var log = File.Create(@"\log.txt");
+//         log.Close();
+//     }
+//     text = @$"{File.ReadAllText(@"log.txt")}{text}";
+//     File.WriteAllText(@"log.txt", text);
+// }
