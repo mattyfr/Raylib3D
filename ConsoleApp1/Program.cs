@@ -45,13 +45,13 @@ while (!Raylib.WindowShouldClose())
     Raylib.BeginDrawing();
     Draw3D(camera3DMain, blockList, bulletList, rooms, room);
     Draw2D(rooms, bulletList, ChoosenWepond);
+    Raylib.EndDrawing();
     camera3DMain = Movement(camera3DMain);
     LookAround();
     (framesSinceLastShoot, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
-    bulletList = BulletController(bulletList, camera3DMain, rooms, ChoosenWepond);
+    bulletList = BulletController(bulletList, rooms, ChoosenWepond);
     reloadCooldown = ChangeWepond(ChoosenWepond, ak47, awp, shootGun, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
-    Raylib.EndDrawing();
     framesSinceLastShoot++;
 }
 static Camera3D Camera()
@@ -88,6 +88,7 @@ static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepo
     Raylib.DrawFPS(150, 150);
     Raylib.DrawText(@$"{rooms.Count()}", 200, 200, 20, Color.Red);
     Raylib.DrawText(@$"{bulletList.Count()}", 250, 250, 20, Color.Red);
+    
 }
 static Camera3D Movement(Camera3D camera3DMain)
 {
@@ -137,7 +138,7 @@ static (int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, i
     }
     return (framesSinceLastShoot, ChoosenWepond, reloadCooldown);
 }
-static List<Bullet> BulletController(List<Bullet> bulletList, Camera3D camera3DMain, List<Room> rooms, Wepond ChoosenWepond)
+static List<Bullet> BulletController(List<Bullet> bulletList, List<Room> rooms, Wepond ChoosenWepond)
 {
     for (int i = 0; i < 5; i++)
     {
@@ -198,8 +199,8 @@ static Vector3 GetEnemiesPos()
 }
 static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> bulletList, List<Room> rooms, Wepond choosenWepond)
 {
-    List<int> bulletsToRemove = [];
-    List<(int,int)> enemiesToRemove = [];
+    List<int> bulletsColidedIndex = [];
+    List<(int,int)> enemiesHitIndex = [];
     for (int i = 0; i < bulletList.Count(); i++)
     {
         for (int j = 0; j < rooms.Count(); j++)
@@ -209,20 +210,21 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
                 Vector3 enemyPos = new Vector3(rooms[j].enenmies[k].pos.X + 100 * j, rooms[j].enenmies[k].pos.Y, rooms[j].enenmies[k].pos.Z);
                 if (Raylib.CheckCollisionSpheres(bulletList[i].pos, 0.5f, enemyPos, 1f))
                 {
-                    bulletsToRemove.Add(i);
-                    enemiesToRemove.Add((j,k));
+                    bulletsColidedIndex.Add(i);
+                    enemiesHitIndex.Add((j,k));
                 }
             }
         }
     }
-    bulletsToRemove = bulletsToRemove.Distinct().ToList();
-    enemiesToRemove = enemiesToRemove.Distinct().ToList();
+    List<int> bulletsToRemove = bulletsColidedIndex.Distinct().ToList();
+    enemiesHitIndex = enemiesHitIndex.Distinct().ToList();
     
-    for(int i = 0; i < bulletsToRemove.Count(); i++)
+    for(int i = 0; i < bulletsColidedIndex.Count(); i++)
     {
+        Raylib.DrawText(@$"{bulletsColidedIndex[i]}", 250, 250 + 10*i, 20, Color.Red);
         bulletList = RemoveBullets(bulletList, i);
     }
-    foreach(var item in enemiesToRemove)
+    foreach(var item in enemiesHitIndex)
     {
         if(rooms[item.Item1].enenmies[item.Item2].hp - choosenWepond.damage <= 0)
         {
