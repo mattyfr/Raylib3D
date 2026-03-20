@@ -1,0 +1,30 @@
+// if (true) 
+// {
+//     room = 
+//     [
+//     new Blocks{posX = 0, posY = -2, posZ = 50, pos = new Vector3(0, -2, 50), height = 1, length = 100, width = 100, isColor = false, color = Shade(new Vector3(0, -2, 50))},
+//     new Blocks{posX = 0, posY = 23, posZ = 0, pos = new Vector3(0, 23, 0), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 0))},
+//     new Blocks{posX = 0, posY = 23, posZ = 100, pos = new Vector3(0, 23, 100), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 100))},
+//     new Blocks{posX = 50, posY = 23, posZ = 22.5f, pos = new Vector3(50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 22.5f))},
+//     new Blocks{posX = 50, posY = 23, posZ = 77.5f, pos = new Vector3(50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 77.5f))},
+//     new Blocks{posX = 50, posY = 28, posZ = 50, pos = new Vector3(50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(50, 28, 50))},
+//     new Blocks{posX = -50, posY = 23, posZ = 22.5f, pos = new Vector3(-50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 22.5f))},
+//     new Blocks{posX = -50, posY = 23, posZ = 77.5f, pos = new Vector3(-50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 77.5f))},
+//     new Blocks{posX = -50, posY = 28, posZ = 50, pos = new Vector3(-50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(-50, 28, 50))},
+//     ];
+//     string Json = JsonSerializer.Serialize<List<Blocks>>(room);
+//     File.WriteAllText("room.txt", Json);
+// }
+
+// AK ak67 = new AK();
+    // ak67.wepondName = "ak67";
+    // ak67.cooldown = 10;
+    // ak67.magSize = 30;
+    // ak67.bulletsInMag = 30;
+    // ak67.reloadTime = 0.125f;
+    // ak67.bulletsPerShoot = 1;
+    // ak67.Accuracy = 0.035f;
+    // ak67.damage = 51;
+
+    // string Json = JsonSerializer.Serialize<AK>(ak67);
+    // File.WriteAllText("..\\..\\..\\ak67.txt", Json);

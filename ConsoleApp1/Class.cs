@@ -58,16 +58,24 @@ public class Wepond
 }
 public class AK:Wepond
 {
+    [JsonInclude]
     public string wepondName = "Ak-67";
+    [JsonInclude]
     public float cooldown = 10;
+    [JsonInclude]
     public int magSize = 30;
+    [JsonInclude]
     public int bulletsInMag = 30;
+    [JsonInclude]
     public float reloadTime = 0.125f;
+    [JsonInclude]
     public float bulletsPerShoot = 1;
+    [JsonInclude]
     public float Accuracy = 0.035f;
+    [JsonInclude]
     public float damage = 51;
 }
-public class AWP:Wepond
+public class AWP
 {
     public string wepondName = "AWP";
     public float cooldown = 2;
@@ -78,7 +86,7 @@ public class AWP:Wepond
     public float Accuracy = 0;
     public float damage = 101;
 }
-public class ShootGun:Wepond
+public class ShootGun
 {
     public string wepondName = "ShootGun";
     public float cooldown = 7;

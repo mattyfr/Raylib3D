@@ -1,0 +1,1 @@
+{"wepondName":"ak67","cooldown":10,"magSize":30,"bulletsInMag":30,"reloadTime":0.125,"bulletsPerShoot":1,"Accuracy":0.035,"damage":51}

@@ -19,26 +19,24 @@ Raylib.SetTargetFPS(targetFps);
 Camera3D camera3DMain = Camera();
 Camera2D camera2DMain = Camera2D();
 Wepond ChoosenWepond = new Wepond();
-AK ak47 = new AK();
 AWP awp = new AWP();
 ShootGun shootGun = new ShootGun();
-// if (true) 
-// {
-//     room = 
-//     [
-//     new Blocks{posX = 0, posY = -2, posZ = 50, pos = new Vector3(0, -2, 50), height = 1, length = 100, width = 100, isColor = false, color = Shade(new Vector3(0, -2, 50))},
-//     new Blocks{posX = 0, posY = 23, posZ = 0, pos = new Vector3(0, 23, 0), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 0))},
-//     new Blocks{posX = 0, posY = 23, posZ = 100, pos = new Vector3(0, 23, 100), height = 50, length = 1, width = 100, isColor = false, color = Shade(new Vector3(0, 23, 100))},
-//     new Blocks{posX = 50, posY = 23, posZ = 22.5f, pos = new Vector3(50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 22.5f))},
-//     new Blocks{posX = 50, posY = 23, posZ = 77.5f, pos = new Vector3(50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(50, 23, 77.5f))},
-//     new Blocks{posX = 50, posY = 28, posZ = 50, pos = new Vector3(50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(50, 28, 50))},
-//     new Blocks{posX = -50, posY = 23, posZ = 22.5f, pos = new Vector3(-50, 23, 22.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 22.5f))},
-//     new Blocks{posX = -50, posY = 23, posZ = 77.5f, pos = new Vector3(-50, 23, 77.5f), height = 50, length = 45, width = 1, isColor = false, color = Shade(new Vector3(-50, 23, 77.5f))},
-//     new Blocks{posX = -50, posY = 28, posZ = 50, pos = new Vector3(-50, 28, 50), height = 40, length = 10, width = 1, isColor = false, color = Shade(new Vector3(-50, 28, 50))},
-//     ];
-//     string Json = JsonSerializer.Serialize<List<Blocks>>(room);
-//     File.WriteAllText("room.txt", Json);
-// }
+
+if (true)
+{
+    // AK ak67 = new AK();
+    // ak67.wepondName = "ak67";
+    // ak67.cooldown = 10;
+    // ak67.magSize = 30;
+    // ak67.bulletsInMag = 30;
+    // ak67.reloadTime = 0.125f;
+    // ak67.bulletsPerShoot = 1;
+    // ak67.Accuracy = 0.035f;
+    // ak67.damage = 51;
+
+    // string Json = JsonSerializer.Serialize<AK>(ak67);
+    // File.WriteAllText("..\\..\\..\\ak67.txt", Json);
+}
 room = LoadRoomFromJson(room);
 while (!Raylib.WindowShouldClose())
 {
@@ -50,7 +48,7 @@ while (!Raylib.WindowShouldClose())
     LookAround();
     (framesSinceLastShoot, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
     bulletList = BulletController(bulletList, rooms, ChoosenWepond);
-    reloadCooldown = ChangeWepond(ChoosenWepond, ak47, awp, shootGun, reloadCooldown);
+    (ChoosenWepond,reloadCooldown) = ChangeWepond(ChoosenWepond, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
     framesSinceLastShoot++;
 }
@@ -169,8 +167,11 @@ static void DrawRoomStructure(int roomNumber, List<Room> rooms, Camera3D camera3
         {
             item.color = Shade(currentPos, camera3DMain);
         }
-        else { }
         Raylib.DrawCube(currentPos, item.width, item.height, item.length, item.color);
+    }
+    if (!(rooms[roomNumber].enenmies.Count() == 0))
+    {
+        Raylib.DrawCube(new Vector3(50 + roomNumber * 100, 3, 50), 1, 10, 10, Color.Blue);
     }
 }
 static void DrawEnemies(int roomNumber, List<Room> rooms)
@@ -217,14 +218,14 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
         }
     }
     List<int> bulletsToRemove = bulletsColidedIndex.Distinct().ToList();
-    enemiesHitIndex = enemiesHitIndex.Distinct().ToList();
+    List<(int,int)>enemiesToRemove = enemiesHitIndex.Distinct().ToList();
     
     for(int i = 0; i < bulletsColidedIndex.Count(); i++)
     {
         Raylib.DrawText(@$"{bulletsColidedIndex[i]}", 250, 250 + 10*i, 20, Color.Red);
         bulletList = RemoveBullets(bulletList, i);
     }
-    foreach(var item in enemiesHitIndex)
+    foreach(var item in enemiesToRemove)
     {
         if(rooms[item.Item1].enenmies[item.Item2].hp - choosenWepond.damage <= 0)
         {
@@ -270,51 +271,57 @@ static Color Shade(Vector3 pos, Camera3D camera3DMain)
 }
 static List<Blocks> LoadRoomFromJson(List<Blocks> room)
 {
-    room = JsonSerializer.Deserialize<List<Blocks>>(File.ReadAllText("room.txt"));
+    room = JsonSerializer.Deserialize<List<Blocks>>(File.ReadAllText("..\\..\\..\\room.txt"));
     foreach (var item in room)
     {
         item.pos = new Vector3(item.posX, item.posY, item.posZ);
     }
     return room;
 }
-static float ChangeWepond(Wepond ChoosenWepond, AK ak47, AWP awp,ShootGun shootGun ,float reloadCooldown)
+static Wepond LoadWepondsFromJson(string name)
 {
+    Wepond wepond = JsonSerializer.Deserialize<Wepond>(File.ReadAllText($"..\\..\\..\\{name}.txt"));
+    return wepond;
+}
+static (Wepond,float) ChangeWepond(Wepond ChoosenWepond, float reloadCooldown)  
+{ 
+    AK ak67 = JsonSerializer.Deserialize<AK>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
+    AWP awp = JsonSerializer.Deserialize<AWP>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
+    ShootGun shootGun = JsonSerializer.Deserialize<ShootGun>(File.ReadAllText("..\\..\\..\\weponds\\shootgun.txt"));
     if (Raylib.IsKeyDown(KeyboardKey.Z))
     {
-        ChoosenWepond.wepondName = ak47.wepondName;
-        ChoosenWepond.cooldown = ak47.cooldown;
-        ChoosenWepond.Accuracy = ak47.Accuracy;
-        ChoosenWepond.bulletsPerShoot = ak47.bulletsPerShoot;
-        ChoosenWepond.magSize = ak47.magSize;
-        ChoosenWepond.reloadTime = ak47.reloadTime;
-        ChoosenWepond.damage = ak47.damage;
-        ChoosenWepond.bulletsInMag = ak47.bulletsInMag;
+        ChoosenWepond.wepondName = ak67.wepondName;
+        ChoosenWepond.cooldown = ak67.cooldown;
+        ChoosenWepond.magSize = ak67.magSize;
+        ChoosenWepond.bulletsInMag = ak67.bulletsInMag;
+        ChoosenWepond.Accuracy = ak67.Accuracy;
+        ChoosenWepond.bulletsPerShoot = ak67.bulletsPerShoot;
+        ChoosenWepond.damage = ak67.damage;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.X))
     {
         ChoosenWepond.wepondName = awp.wepondName;
         ChoosenWepond.cooldown = awp.cooldown;
+        ChoosenWepond.magSize = awp.magSize;
+        ChoosenWepond.bulletsInMag = awp.bulletsInMag;
         ChoosenWepond.Accuracy = awp.Accuracy;
         ChoosenWepond.bulletsPerShoot = awp.bulletsPerShoot;
-        ChoosenWepond.magSize = awp.magSize;
-        ChoosenWepond.reloadTime = awp.reloadTime;
         ChoosenWepond.damage = awp.damage;
-        ChoosenWepond.bulletsInMag = awp.bulletsInMag;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.C))
     {
         ChoosenWepond.wepondName = shootGun.wepondName;
         ChoosenWepond.cooldown = shootGun.cooldown;
+        ChoosenWepond.magSize = shootGun.magSize;
+        ChoosenWepond.bulletsInMag = shootGun.bulletsInMag;
         ChoosenWepond.Accuracy = shootGun.Accuracy;
         ChoosenWepond.bulletsPerShoot = shootGun.bulletsPerShoot;
-        ChoosenWepond.magSize = shootGun.magSize;
-        ChoosenWepond.reloadTime = shootGun.reloadTime;
-        ChoosenWepond.bulletsInMag = shootGun.bulletsInMag;
+        ChoosenWepond.damage = shootGun.damage;
         reloadCooldown = 0;
     }
-    return reloadCooldown;
+    return (ChoosenWepond,reloadCooldown);
 }
 static Vector3 GetBulletAccuracy(Wepond ChoosenWepond)
 {
@@ -369,6 +376,7 @@ static List<Bullet> RemoveBullets(List<Bullet> bulletList, int index)
     bulletList.RemoveAt(index);
     return bulletList;
 }
+
 // unused functions
 // static int DisatanceBetweenObjects(Vector3 pos1, Vector3 pos2)
 // {
