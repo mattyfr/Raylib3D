@@ -42,11 +42,11 @@ while (!Raylib.WindowShouldClose())
 {
     Raylib.BeginDrawing();
     Draw3D(camera3DMain, blockList, bulletList, rooms, room);
-    Draw2D(rooms, bulletList, ChoosenWepond);
+    Draw2D(rooms, bulletList, ChoosenWepond, camera3DMain);
     Raylib.EndDrawing();
     camera3DMain = Movement(camera3DMain);
     LookAround();
-    (framesSinceLastShoot, ChoosenWepond, reloadCooldown) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
+    (framesSinceLastShoot, ChoosenWepond, reloadCooldown, bulletList) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
     bulletList = BulletController(bulletList, rooms, ChoosenWepond);
     (ChoosenWepond,reloadCooldown) = ChangeWepond(ChoosenWepond, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
@@ -57,7 +57,7 @@ static Camera3D Camera()
     Camera3D camera = new Camera3D();
     camera.Position = new Vector3(0, 0, 0);
     camera.Up = new Vector3(0f, 1f, 0f);
-    camera.Target = new Vector3(0f, 0f, 1f);
+    camera.Target = new Vector3(0, 0, 1f);
     camera.FovY = 90f;
     return camera;
 }
@@ -78,11 +78,11 @@ static void Draw3D(Camera3D camera3DMain, List<Blocks> blockList, List<Bullet> b
     DrawBullets(bulletList);
     Raylib.EndMode3D();
 }
-static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepond)
+static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepond, Camera3D maincamera3d)
 {
     DrawCrossHair();
     DrawWepondInfo(ChoosenWepond);
-    Raylib.DrawText("Text", 100, 100, 10, Color.Red);
+    Raylib.DrawText($@"{maincamera3d.Position}", 100, 100, 10, Color.Red);
     Raylib.DrawFPS(150, 150);
     Raylib.DrawText(@$"{rooms.Count()}", 200, 200, 20, Color.Red);
     Raylib.DrawText(@$"{bulletList.Count()}", 250, 250, 20, Color.Red);
@@ -115,7 +115,7 @@ void LookAround()
     Raylib.CameraPitch(ref camera3DMain, mouseMovement.Y / -360, true, true, false);
     Console.WriteLine(camera3DMain.Target);
 }
-static (int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, float reloadCooldown)
+static (int, Wepond, float, List<Bullet>) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, float reloadCooldown)
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
@@ -134,7 +134,7 @@ static (int, Wepond, float) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, i
     {
         (reloadCooldown, ChoosenWepond) = Reload(reloadCooldown, ChoosenWepond);
     }
-    return (framesSinceLastShoot, ChoosenWepond, reloadCooldown);
+    return (framesSinceLastShoot, ChoosenWepond, reloadCooldown, bulletList);
 }
 static List<Bullet> BulletController(List<Bullet> bulletList, List<Room> rooms, Wepond ChoosenWepond)
 {
@@ -202,39 +202,48 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
 {
     List<int> bulletsColidedIndex = [];
     List<(int,int)> enemiesHitIndex = [];
-    for (int i = 0; i < bulletList.Count(); i++)
+    (int,int) enemiesToRemove = (99,99);
+    
+    if (!(bulletList.Count() == 0))
     {
-        for (int j = 0; j < rooms.Count(); j++)
+        for (int i = 0; i < bulletList.Count(); i++)
         {
-            for (int k = 0; k < rooms[j].enenmies.Count(); k++)
+            for (int j = 0; j < rooms.Count(); j++)
             {
-                Vector3 enemyPos = new Vector3(rooms[j].enenmies[k].pos.X + 100 * j, rooms[j].enenmies[k].pos.Y, rooms[j].enenmies[k].pos.Z);
-                if (Raylib.CheckCollisionSpheres(bulletList[i].pos, 0.5f, enemyPos, 1f))
+                for (int k = 0; k < rooms[j].enenmies.Count(); k++)
                 {
-                    bulletsColidedIndex.Add(i);
-                    enemiesHitIndex.Add((j,k));
+                    Vector3 enemyPos = new Vector3(rooms[j].enenmies[k].pos.X + 100 * j, rooms[j].enenmies[k].pos.Y, rooms[j].enenmies[k].pos.Z);
+                    if (Raylib.CheckCollisionSpheres(bulletList[i].pos, 0.5f, enemyPos, 1f))
+                    {
+                        bulletsColidedIndex.Add(i);
+                        enemiesHitIndex.Add((j,k));
+                    }
                 }
             }
         }
     }
     List<int> bulletsToRemove = bulletsColidedIndex.Distinct().ToList();
-    List<(int,int)>enemiesToRemove = enemiesHitIndex.Distinct().ToList();
+    List<(int,int)>enemiesToDamage = enemiesHitIndex.ToList();
     
-    for(int i = 0; i < bulletsColidedIndex.Count(); i++)
+    for(int i = 0; i < bulletsToRemove.Count(); i++)
     {
-        Raylib.DrawText(@$"{bulletsColidedIndex[i]}", 250, 250 + 10*i, 20, Color.Red);
-        bulletList = RemoveBullets(bulletList, i);
+        bulletList = RemoveBullets(bulletList, 0);
     }
-    foreach(var item in enemiesToRemove)
+    for (int i = 0; i < enemiesToDamage.Count(); i++)
     {
-        if(rooms[item.Item1].enenmies[item.Item2].hp - choosenWepond.damage <= 0)
+        if(rooms[enemiesToDamage[i].Item1].enenmies[enemiesToDamage[i].Item2].hp - choosenWepond.damage <= 0)
         {
-            rooms[item.Item1].enenmies.RemoveAt(item.Item2);
+            enemiesToRemove = (enemiesToDamage[i].Item1, enemiesToDamage[i].Item2);
+            
         }
         else
         {
-            rooms[item.Item1].enenmies[item.Item2].hp -= choosenWepond.damage;
+            rooms[enemiesToDamage[i].Item1].enenmies[enemiesToDamage[i].Item2].hp -= choosenWepond.damage;
         }
+    }
+    if (!(enemiesToRemove.Item1 == 99) && !(enemiesToRemove.Item2 == 99))
+    {
+        rooms[enemiesToRemove.Item1].enenmies.RemoveAt(enemiesToRemove.Item2);
     }
     return (bulletList, rooms);
 }
@@ -353,7 +362,9 @@ static float StartReload(Wepond ChoosenWepond)
 }
 static void DrawCrossHair()
 {
-    Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 1, Color.Red);
+    // Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 1, Color.Red);
+    Raylib.DrawLine((int)Raylib.GetScreenCenter().X + 10, (int)Raylib.GetScreenCenter().Y, (int)Raylib.GetScreenCenter().X - 10, (int)Raylib.GetScreenCenter().Y, Color.Red);
+    Raylib.DrawLine((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y + 10, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y - 10, Color.Red);
 }
 static void DrawWepondInfo(Wepond ChoosenWepond)
 {

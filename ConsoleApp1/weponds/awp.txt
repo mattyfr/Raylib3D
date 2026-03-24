@@ -1,1 +1,1 @@
-{"wepondName":"awp","cooldown":2,"magSize":5,"bulletsInMag":5,"reloadTime":0.15,"bulletsPerShoot":1,"Accuracy":0,"damage":101}
+{"wepondName":"arctic warfare police","cooldown":2,"magSize":5,"bulletsInMag":5,"reloadTime":0.15,"bulletsPerShoot":1,"Accuracy":0,"damage":101}
