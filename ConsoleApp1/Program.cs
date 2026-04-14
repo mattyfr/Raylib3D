@@ -252,8 +252,17 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
     return (bulletList, rooms);
 }
 static List<Room> CreateRooms(List<Room> rooms, Camera3D camera3DMain, List<Blocks> room)
-{
-    if (DisatanceToLastRoom(rooms, camera3DMain) >= -200)
+{   
+    if (rooms.Count() < 1)
+    {
+        rooms.Add(new Room { roomStructure = room, enenmies = 
+        [
+        new Enemy { pos = GetEnemiesPos(), hp = 100}, 
+        new Enemy { pos = GetEnemiesPos(), hp = 100}, 
+        new Enemy { pos = GetEnemiesPos(), hp = 100}
+        ] });
+    }
+    if (DisatanceToLastRoom(rooms, camera3DMain) >= -200 && rooms[rooms.Count() -1].enenmies.Count() == 0)
     {
         rooms.Add(new Room { roomStructure = room, enenmies = 
         [
