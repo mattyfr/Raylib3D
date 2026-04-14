@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 
 int targetFps = 60;
 int framesSinceLastShoot = 0;
-float reloadCooldown = 0;
+int reloadCooldown = 1;
 List<Bullet> bulletList = [];
 List<Blocks> blockList = [];
 List<Blocks> room = [];
@@ -43,7 +43,6 @@ while (!Raylib.WindowShouldClose())
     Raylib.BeginDrawing();
     Draw3D(camera3DMain, blockList, bulletList, rooms, room);
     Draw2D(rooms, bulletList, ChoosenWepond, camera3DMain);
-    Raylib.EndDrawing();
     camera3DMain = Movement(camera3DMain);
     LookAround();
     (framesSinceLastShoot, ChoosenWepond, reloadCooldown, bulletList) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
@@ -51,6 +50,7 @@ while (!Raylib.WindowShouldClose())
     (ChoosenWepond,reloadCooldown) = ChangeWepond(ChoosenWepond, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
     framesSinceLastShoot++;
+    Raylib.EndDrawing();
 }
 static Camera3D Camera()
 {
@@ -115,22 +115,26 @@ void LookAround()
     Raylib.CameraPitch(ref camera3DMain, mouseMovement.Y / -360, true, true, false);
     Console.WriteLine(camera3DMain.Target);
 }
-static (int, Wepond, float, List<Bullet>) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, float reloadCooldown)
+static (int, Wepond, int , List<Bullet>) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, int reloadCooldown)
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
     {
-        if (framesSinceLastShoot >= Raylib.GetFPS() / ChoosenWepond.cooldown && ChoosenWepond.bulletsInMag > 0)
+        if (framesSinceLastShoot >= Raylib.GetFPS() / ChoosenWepond.cooldown && ChoosenWepond.bulletsInMag > 0 && reloadCooldown == 0)
         {
             for (int i = 0; i < ChoosenWepond.bulletsPerShoot; i++)
             {
-                Bullet bullet = new Bullet(); bullet.pos = camera3DMain.Position; bullet.path = Raylib.GetCameraForward(ref camera3DMain) + GetBulletAccuracy(ChoosenWepond); bullet.rotationAngle = 0; bullet.framesSinceFired = 0;
+                Bullet bullet = new Bullet(); 
+                bullet.pos = camera3DMain.Position; 
+                bullet.path = Raylib.GetCameraForward(ref camera3DMain) + GetBulletAccuracy(ChoosenWepond); 
+                bullet.rotationAngle = 0; 
+                bullet.framesSinceFired = 0;
                 bulletList.Add(bullet);
             }
             framesSinceLastShoot = 0;
             ChoosenWepond.bulletsInMag--;
         }
     }
-    if (ChoosenWepond.bulletsInMag >= 0)
+    if (ChoosenWepond.bulletsInMag <= 0)
     {
         (reloadCooldown, ChoosenWepond) = Reload(reloadCooldown, ChoosenWepond);
     }
@@ -292,7 +296,7 @@ static Wepond LoadWepondsFromJson(string name)
     Wepond wepond = JsonSerializer.Deserialize<Wepond>(File.ReadAllText($"..\\..\\..\\{name}.txt"));
     return wepond;
 }
-static (Wepond,float) ChangeWepond(Wepond ChoosenWepond, float reloadCooldown)  
+static (Wepond,int) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown)  
 { 
     AK ak67 = JsonSerializer.Deserialize<AK>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
     AWP awp = JsonSerializer.Deserialize<AWP>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
@@ -306,6 +310,7 @@ static (Wepond,float) ChangeWepond(Wepond ChoosenWepond, float reloadCooldown)
         ChoosenWepond.Accuracy = ak67.Accuracy;
         ChoosenWepond.bulletsPerShoot = ak67.bulletsPerShoot;
         ChoosenWepond.damage = ak67.damage;
+        ChoosenWepond.reloadTime = ak67.reloadTime;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.X))
@@ -317,6 +322,7 @@ static (Wepond,float) ChangeWepond(Wepond ChoosenWepond, float reloadCooldown)
         ChoosenWepond.Accuracy = awp.Accuracy;
         ChoosenWepond.bulletsPerShoot = awp.bulletsPerShoot;
         ChoosenWepond.damage = awp.damage;
+        ChoosenWepond.reloadTime = awp.reloadTime;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.C))
@@ -328,6 +334,7 @@ static (Wepond,float) ChangeWepond(Wepond ChoosenWepond, float reloadCooldown)
         ChoosenWepond.Accuracy = shootGun.Accuracy;
         ChoosenWepond.bulletsPerShoot = shootGun.bulletsPerShoot;
         ChoosenWepond.damage = shootGun.damage;
+        ChoosenWepond.reloadTime = shootGun.reloadTime;
         reloadCooldown = 0;
     }
     return (ChoosenWepond,reloadCooldown);
@@ -337,27 +344,33 @@ static Vector3 GetBulletAccuracy(Wepond ChoosenWepond)
     Vector3 offsetVector = new Vector3(Random.Shared.Next(-5, 6), Random.Shared.Next(-5, 6), Random.Shared.Next(-5, 6));
     return offsetVector / 20 * ChoosenWepond.Accuracy;
 }
-static (float, Wepond) Reload(float reloadCooldown, Wepond ChoosenWepond)
+static (int, Wepond) Reload(int reloadCooldown, Wepond ChoosenWepond)
 {
-    if (reloadCooldown == 0 && ChoosenWepond.bulletsInMag == 0)
+    // Raylib.CloseWindow();
+    if (reloadCooldown == 0)
     {
         reloadCooldown = StartReload(ChoosenWepond);
     }
-    else if (!(reloadCooldown == 0) && ChoosenWepond.bulletsInMag == 0)
+    if (!(reloadCooldown == 0))
     {
         reloadCooldown--;
         Raylib.DrawText("Reloading", (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 30, Color.Red);
     }
-    if (reloadCooldown < 2 && reloadCooldown > 0)
+    if (reloadCooldown < 3 && reloadCooldown > 0)
     {
         ChoosenWepond.bulletsInMag = ChoosenWepond.magSize;
         reloadCooldown = 0;
     }
+    Raylib.DrawText(@$"{reloadCooldown}", 300, 300, 30, Color.Red);
+    Raylib.DrawText(@$"{Raylib.GetFrameTime()}", 330, 300, 30, Color.Red);
+    Raylib.DrawText(@$"{ChoosenWepond.reloadTime}",300, 330, 30, Color.Red);
     return (reloadCooldown, ChoosenWepond);
 }
-static float StartReload(Wepond ChoosenWepond)
+static int StartReload(Wepond ChoosenWepond)
 {
-    float reloadCooldown = Raylib.GetFPS() / ChoosenWepond.reloadTime;
+    // int reloadCooldown = Raylib.GetFPS() * ChoosenWepond.reloadTime;
+    float reloadCooldownF = ChoosenWepond.reloadTime / Raylib.GetFrameTime();
+    int reloadCooldown = (int)reloadCooldownF;
     return reloadCooldown;
 }
 static void DrawCrossHair()

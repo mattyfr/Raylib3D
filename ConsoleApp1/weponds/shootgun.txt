@@ -1,1 +1,1 @@
-{"wepondName":"shootGun","cooldown":7,"magSize":7,"bulletsInMag":7,"reloadTime":0.135,"bulletsPerShoot":5,"Accuracy":0.05,"damage":32}
+{"wepondName":"shootGun","cooldown":7,"magSize":7,"bulletsInMag":7,"reloadTime":5,"bulletsPerShoot":5,"Accuracy":0.05,"damage":32}
