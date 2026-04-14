@@ -57,7 +57,7 @@ static Camera3D Camera()
     Camera3D camera = new Camera3D();
     camera.Position = new Vector3(0, 0, 0);
     camera.Up = new Vector3(0f, 1f, 0f);
-    camera.Target = new Vector3(0, 0, 1f);
+    camera.Target = new Vector3(0, 0, 0.49f);
     camera.FovY = 90f;
     return camera;
 }
@@ -90,19 +90,23 @@ static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepo
 }
 static Camera3D Movement(Camera3D camera3DMain)
 {
-    if (Raylib.IsKeyDown(KeyboardKey.W))
+    if (Raylib.IsKeyDown(KeyboardKey.W) && !(Raylib.GetCameraForward(ref camera3DMain).Z + camera3DMain.Position.Z > 100)
+                                        && !(Raylib.GetCameraForward(ref camera3DMain).Z + camera3DMain.Position.Z < 0))
     {
         Raylib.CameraMoveForward(ref camera3DMain, 1f, true);
     }
-    if (Raylib.IsKeyDown(KeyboardKey.S))
+    if (Raylib.IsKeyDown(KeyboardKey.S) && !(Raylib.GetCameraForward(ref camera3DMain).Z * -1 + camera3DMain.Position.Z > 100)
+                                        && !(Raylib.GetCameraForward(ref camera3DMain).Z * -1 + camera3DMain.Position.Z < 0))
     {
         Raylib.CameraMoveForward(ref camera3DMain, -1f, true);
     }
-    if (Raylib.IsKeyDown(KeyboardKey.A))
+    if (Raylib.IsKeyDown(KeyboardKey.A) && !(Raylib.GetCameraForward(ref camera3DMain).X * -1 + camera3DMain.Position.Z > 100)
+                                        && !(Raylib.GetCameraForward(ref camera3DMain).X * -1 + camera3DMain.Position.Z < 0))
     {
         Raylib.CameraMoveRight(ref camera3DMain, -1f, true);
     }
-    if (Raylib.IsKeyDown(KeyboardKey.D))
+    if (Raylib.IsKeyDown(KeyboardKey.D) && !(Raylib.GetCameraForward(ref camera3DMain).X + camera3DMain.Position.Z > 100)
+                                        && !(Raylib.GetCameraForward(ref camera3DMain).X + camera3DMain.Position.Z < 0))
     {
         Raylib.CameraMoveRight(ref camera3DMain, 1f, true);
     }
@@ -299,11 +303,6 @@ static List<Blocks> LoadRoomFromJson(List<Blocks> room)
         item.pos = new Vector3(item.posX, item.posY, item.posZ);
     }
     return room;
-}
-static Wepond LoadWepondsFromJson(string name)
-{
-    Wepond wepond = JsonSerializer.Deserialize<Wepond>(File.ReadAllText($"..\\..\\..\\{name}.txt"));
-    return wepond;
 }
 static (Wepond,int) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown)  
 { 
