@@ -4,28 +4,24 @@ using Raylib_cs;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using System.Runtime.InteropServices;
-using System.Net.Sockets;
 
 int targetFps = 60;
 int framesSinceLastShoot = 0;
 int reloadCooldown = 1;
-bool loadingScreen = true;
-int loadingScreenTime = 10;
-int loadingScreenFrames = 0;
-// Image crosshairImage = Raylib.LoadImage("C:\\Users\\mathias.granlund\\Documents\\Programering 1\\Raylib\\Raylib3D\\Crosshair.png");
-// Console.WriteLine(Raylib.IsImageValid(crosshairImage).ToString);
-List<Bullet> bulletList = [];
+bool wepondsAreLoaded = false;
+Image crosshairImage = Raylib.LoadImage("Raylib3D\\Crosshair.png");
+Texture2D crosshair = Raylib.LoadTextureFromImage(crosshairImage);
+List<Bullet> playerBulletList = [];
+List<Bullet> enemyBulletList = [];
 List<Blocks> blockList = [];
 List<Blocks> room = [];
 List<Room> rooms = [];
 
 Raylib.InitWindow(Raylib.GetScreenWidth(), Raylib.GetScreenHeight(), "title");
-Texture2D crosshair = Raylib.LoadTexture(@"C:\Users\mathias.granlund\Documents\Programering 1\Raylib\Raylib3D\Crosshair.png");
 Raylib.DisableCursor();
 Raylib.ToggleFullscreen();
 Raylib.SetTargetFPS(targetFps);
 Camera3D camera3DMain = Camera();
-Camera2D camera2DMain = Camera2D();
 Wepond ChoosenWepond = new Wepond();
 AWP awp = new AWP();
 ShootGun shootGun = new ShootGun();
@@ -48,50 +44,19 @@ if (true)
 room = LoadRoomFromJson(room);
 while (!Raylib.WindowShouldClose())
 {
-    if (!loadingScreen)
-    {
-        Raylib.BeginDrawing();
-        Draw3D(camera3DMain, blockList, bulletList, rooms, room);
-        Draw2D(rooms, bulletList, ChoosenWepond, camera3DMain, crosshair);
-        (camera3DMain, loadingScreenTime, loadingScreen) = Movement(camera3DMain, loadingScreenTime, loadingScreen);
-        LookAround();
-        (framesSinceLastShoot, ChoosenWepond, reloadCooldown, bulletList) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, bulletList, reloadCooldown);
-        bulletList = BulletController(bulletList, rooms, ChoosenWepond);
-        (ChoosenWepond,reloadCooldown) = ChangeWepond(ChoosenWepond, reloadCooldown);
-        rooms = CreateRooms(rooms, camera3DMain, room);
-        framesSinceLastShoot++;
-        Raylib.EndDrawing();
-    }
-    if (loadingScreen)
-    {
-        loadingScreenFrames++;
-        if (loadingScreenFrames >= 60)
-        {
-            loadingScreenTime--;
-            loadingScreenFrames = 0;
-        }
-        if (loadingScreenTime == 0)
-        {
-            loadingScreen = false;
-        }
-        Raylib.BeginDrawing();
-        Raylib.ClearBackground(Color.Black);
-        Raylib.DrawText("W-A-S-D is used for movement", 100, 100, 20, Color.White);
-        Raylib.DrawText("Z-X-C is used to swap weapond", 100, 130, 20, Color.White);
-        Raylib.DrawText("Shoot all blue targets to procead to the next room", 100, 160, 20, Color.White);
-        Raylib.DrawText("ESC to close", 100, 190, 20, Color.White);
-        Raylib.DrawText("Please do not crash the game pweas", 100, 220, 20, Color.White);
-        Raylib.DrawText("Press K to open pause menu again :)", 100, 250, 20, Color.White);
-        Raylib.DrawText("", 100, 280, 20, Color.White);
-        Raylib.DrawText("", 100, 310, 20, Color.White);
-        Raylib.DrawText("", 100, 340, 20, Color.White);
-        Raylib.DrawText("", 100, 370, 20, Color.White);
-        Raylib.DrawText("", 100, 400, 20, Color.White);
-        Raylib.DrawText("", 100, 430, 20, Color.White);
-        Raylib.DrawText("", 100, 460, 20, Color.White);
-        Raylib.EndDrawing();
-    }
+    Raylib.BeginDrawing();
+    Draw3D(camera3DMain, blockList, playerBulletList, rooms, room);
+    Draw2D(rooms, playerBulletList, ChoosenWepond, camera3DMain, crosshair);
+    camera3DMain = Movement(camera3DMain);
+    LookAround();
+    (framesSinceLastShoot, ChoosenWepond, reloadCooldown, playerBulletList) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, playerBulletList, reloadCooldown);
+    playerBulletList = BulletController(playerBulletList, rooms, ChoosenWepond);
+    (ChoosenWepond,reloadCooldown,wepondsAreLoaded) = ChangeWepond(ChoosenWepond, reloadCooldown, wepondsAreLoaded);
+    rooms = CreateRooms(rooms, camera3DMain, room);
+    framesSinceLastShoot++;
+    Raylib.EndDrawing();
 }
+// makes camera
 static Camera3D Camera()
 {
     Camera3D camera = new Camera3D();
@@ -101,11 +66,7 @@ static Camera3D Camera()
     camera.FovY = 90f;
     return camera;
 }
-static Camera2D Camera2D()
-{
-    Camera2D camera = new Camera2D();
-    return camera;
-}
+// draws stuff thats 3d mainly
 static void Draw3D(Camera3D camera3DMain, List<Blocks> blockList, List<Bullet> bulletList, List<Room> rooms, List<Blocks> room)
 {
     Raylib.BeginMode3D(camera3DMain);
@@ -118,6 +79,7 @@ static void Draw3D(Camera3D camera3DMain, List<Blocks> blockList, List<Bullet> b
     DrawBullets(bulletList);
     Raylib.EndMode3D();
 }
+// Draws some of the 2d stuff
 static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepond, Camera3D maincamera3d, Texture2D crosshair)
 {
     DrawCrossHair(crosshair);
@@ -128,7 +90,8 @@ static void Draw2D(List<Room> rooms, List<Bullet> bulletList, Wepond ChoosenWepo
     Raylib.DrawText(@$"{bulletList.Count()}", 250, 250, 20, Color.Red);
     
 }
-static (Camera3D,int,bool) Movement(Camera3D camera3DMain, int loadingScreenTime, bool loadingScreen)
+// The keyboard input
+static Camera3D Movement(Camera3D camera3DMain)
 {
     if (Raylib.IsKeyDown(KeyboardKey.W) && !(Raylib.GetCameraForward(ref camera3DMain).Z + camera3DMain.Position.Z > 100)
                                         && !(Raylib.GetCameraForward(ref camera3DMain).Z + camera3DMain.Position.Z < 0))
@@ -150,13 +113,9 @@ static (Camera3D,int,bool) Movement(Camera3D camera3DMain, int loadingScreenTime
     {
         Raylib.CameraMoveRight(ref camera3DMain, 1f, true);
     }
-    if (Raylib.IsKeyDown(KeyboardKey.K))
-    {
-        loadingScreenTime = 7;
-        loadingScreen = true;
-    }
-    return (camera3DMain, loadingScreenTime, loadingScreen);
+    return camera3DMain;
 }
+// Look around with mouse movments
 void LookAround()
 {
     Vector2 mouseMovement = Raylib.GetMouseDelta();
@@ -164,6 +123,7 @@ void LookAround()
     Raylib.CameraPitch(ref camera3DMain, mouseMovement.Y / -360, true, true, false);
     Console.WriteLine(camera3DMain.Target);
 }
+// Shooting stuff 
 static (int, Wepond, int , List<Bullet>) Shoot(Wepond ChoosenWepond, Camera3D camera3DMain, int framesSinceLastShoot, List<Bullet> bulletList, int reloadCooldown)
 {
     if (Raylib.IsMouseButtonDown(MouseButton.Left))
@@ -189,6 +149,7 @@ static (int, Wepond, int , List<Bullet>) Shoot(Wepond ChoosenWepond, Camera3D ca
     }
     return (framesSinceLastShoot, ChoosenWepond, reloadCooldown, bulletList);
 }
+// bullet movement script
 static List<Bullet> BulletController(List<Bullet> bulletList, List<Room> rooms, Wepond ChoosenWepond)
 {
     for (int i = 0; i < 5; i++)
@@ -203,6 +164,7 @@ static List<Bullet> BulletController(List<Bullet> bulletList, List<Room> rooms, 
     }
     return bulletList;
 }
+// Calls functions to draw rooms
 static void DrawRooms(List<Room> rooms, Camera3D camera3DMain)
 {
     for (int roomNumber = 0; roomNumber < rooms.Count(); roomNumber++)
@@ -211,6 +173,7 @@ static void DrawRooms(List<Room> rooms, Camera3D camera3DMain)
         DrawEnemies(roomNumber, rooms);
     }
 }
+// Draws the rooms
 static void DrawRoomStructure(int roomNumber, List<Room> rooms, Camera3D camera3DMain)
 {
     foreach (var item in rooms[roomNumber].roomStructure)
@@ -227,6 +190,7 @@ static void DrawRoomStructure(int roomNumber, List<Room> rooms, Camera3D camera3
         Raylib.DrawCube(new Vector3(50 + roomNumber * 100, 3, 50), 1, 10, 10, Color.Blue);
     }
 }
+// Draws enemies in the room
 static void DrawEnemies(int roomNumber, List<Room> rooms)
 {
     foreach (var item in rooms[roomNumber].enenmies)
@@ -236,10 +200,12 @@ static void DrawEnemies(int roomNumber, List<Room> rooms)
         DrawEnemiesHP(item, currentPos);
     }
 }
+// Draws enemy health bar
 static void DrawEnemiesHP(Enemy item,Vector3 currenpos)
 {
     Raylib.DrawCube(currenpos, 0.1f, 1f, item.hp/50f, Color.Black);
 }
+// Draws the bullets
 static void DrawBullets(List<Bullet> bulletList)
 {
     foreach (var item in bulletList)
@@ -247,10 +213,12 @@ static void DrawBullets(List<Bullet> bulletList)
         Raylib.DrawCircle3D(item.pos, 0.05f, Vector3.Zero, item.rotationAngle, Color.Yellow);
     }
 }
+// Gives enemies a random pos on the x and z axis
 static Vector3 GetEnemiesPos()
 {
     return new Vector3(Random.Shared.Next(0, 50), 0, Random.Shared.Next(0, 100));
 }
+// Looks for bullet and enemie collision and removes bullet and deals dmg to enemy
 static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> bulletList, List<Room> rooms, Wepond choosenWepond)
 {
     List<int> bulletsColidedIndex = [];
@@ -287,6 +255,7 @@ static (List<Bullet>, List<Room>) CheckForCollisionsBulletToEnemy(List<Bullet> b
         if(rooms[enemiesToDamage[i].Item1].enenmies[enemiesToDamage[i].Item2].hp - choosenWepond.damage <= 0)
         {
             enemiesToRemove = (enemiesToDamage[i].Item1, enemiesToDamage[i].Item2);
+            
         }
         else
         {
@@ -348,48 +317,40 @@ static List<Blocks> LoadRoomFromJson(List<Blocks> room)
     }
     return room;
 }
-static (Wepond,int) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown)  
+static (Wepond,int,bool) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown, bool wepondsAreLoaded)  
 { 
-    AK ak67 = JsonSerializer.Deserialize<AK>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
-    AWP awp = JsonSerializer.Deserialize<AWP>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
-    ShootGun shootGun = JsonSerializer.Deserialize<ShootGun>(File.ReadAllText("..\\..\\..\\weponds\\shootgun.txt"));
+    if (!wepondsAreLoaded)
+    {
+        (Wepond, Wepond, Wepond) ak67, awp, shootGun = loadWeponds();
+        wepondsAreLoaded = true;
+    }
     if (Raylib.IsKeyDown(KeyboardKey.Z))
     {
-        ChoosenWepond.wepondName = ak67.wepondName;
-        ChoosenWepond.cooldown = ak67.cooldown;
-        ChoosenWepond.magSize = ak67.magSize;
-        ChoosenWepond.bulletsInMag = ak67.bulletsInMag;
-        ChoosenWepond.Accuracy = ak67.Accuracy;
-        ChoosenWepond.bulletsPerShoot = ak67.bulletsPerShoot;
-        ChoosenWepond.damage = ak67.damage;
-        ChoosenWepond.reloadTime = ak67.reloadTime;
+        ChoosenWepond = ak67;
+        Image ak67img = Raylib.LoadImage("Raylib3D\\ConsoleApp1\\weponds\\ak67.jpeg");
+        Texture2D ak67tex = Raylib.LoadTextureFromImage(ak67img);
+        Raylib.DrawTexture(ak67tex, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, Color.White);
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.X))
     {
-        ChoosenWepond.wepondName = awp.wepondName;
-        ChoosenWepond.cooldown = awp.cooldown;
-        ChoosenWepond.magSize = awp.magSize;
-        ChoosenWepond.bulletsInMag = awp.bulletsInMag;
-        ChoosenWepond.Accuracy = awp.Accuracy;
-        ChoosenWepond.bulletsPerShoot = awp.bulletsPerShoot;
-        ChoosenWepond.damage = awp.damage;
-        ChoosenWepond.reloadTime = awp.reloadTime;
+        ChoosenWepond = awp;
         reloadCooldown = 0;
     }
     if (Raylib.IsKeyDown(KeyboardKey.C))
     {
-        ChoosenWepond.wepondName = shootGun.wepondName;
-        ChoosenWepond.cooldown = shootGun.cooldown;
-        ChoosenWepond.magSize = shootGun.magSize;
-        ChoosenWepond.bulletsInMag = shootGun.bulletsInMag;
-        ChoosenWepond.Accuracy = shootGun.Accuracy;
-        ChoosenWepond.bulletsPerShoot = shootGun.bulletsPerShoot;
-        ChoosenWepond.damage = shootGun.damage;
-        ChoosenWepond.reloadTime = shootGun.reloadTime;
+        ChoosenWepond = shootGun;
         reloadCooldown = 0;
     }
     return (ChoosenWepond,reloadCooldown);
+}
+static (Wepond, Wepond, Wepond) loadWeponds()
+{
+    Wepond ak67 = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
+    Wepond awp = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
+    Wepond shootGun = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\shootgun.txt"));
+    
+    return (ak67, awp, shootGun);
 }
 static Vector3 GetBulletAccuracy(Wepond ChoosenWepond)
 {
@@ -428,9 +389,9 @@ static int StartReload(Wepond ChoosenWepond)
 static void DrawCrossHair(Texture2D crosshair)
 {
     // Raylib.DrawCircle((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, 1, Color.Red);
-    Raylib.DrawTexture(crosshair, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, Color.Red);
-    // Raylib.DrawLine((int)Raylib.GetScreenCenter().X + 10, (int)Raylib.GetScreenCenter().Y, (int)Raylib.GetScreenCenter().X - 10, (int)Raylib.GetScreenCenter().Y, Color.Red);
-    // Raylib.DrawLine((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y + 10, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y - 10, Color.Red);
+    Raylib.DrawTexture(crosshair, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y, Color.White);
+    Raylib.DrawLine((int)Raylib.GetScreenCenter().X + 10, (int)Raylib.GetScreenCenter().Y, (int)Raylib.GetScreenCenter().X - 10, (int)Raylib.GetScreenCenter().Y, Color.Red);
+    Raylib.DrawLine((int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y + 10, (int)Raylib.GetScreenCenter().X, (int)Raylib.GetScreenCenter().Y - 10, Color.Red);
 }
 static void DrawWepondInfo(Wepond ChoosenWepond)
 {
@@ -453,7 +414,15 @@ static List<Bullet> RemoveBullets(List<Bullet> bulletList, int index)
     bulletList.RemoveAt(index);
     return bulletList;
 }
-
+static void EnemyController(List<Room> rooms, Camera3D camera3DMain)
+{
+    foreach (var item in rooms[rooms.Count()].enenmies)
+    {
+        Vector3 a = item.pos - camera3DMain.Position;
+        a = a / 10;
+        Bullet bullet = new Bullet{ framesSinceFired = 0, path = a, pos = item.pos, rotationAngle = 0};
+    }
+}
 // unused functions
 // static int DisatanceBetweenObjects(Vector3 pos1, Vector3 pos2)
 // {
