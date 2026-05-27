@@ -47,13 +47,21 @@ public class Room
 }
 public class Wepond
 {
+    [JsonInclude]
     public string wepondName;
+    [JsonInclude]
     public float cooldown;
+    [JsonInclude]
     public int magSize;
+    [JsonInclude]
     public int bulletsInMag;
+    [JsonInclude]
     public int reloadTime;
+    [JsonInclude]
     public float bulletsPerShoot;
+    [JsonInclude]
     public float Accuracy;
+    [JsonInclude]
     public float damage;
 }
 public class AK:Wepond

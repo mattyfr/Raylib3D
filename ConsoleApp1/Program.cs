@@ -23,8 +23,6 @@ Raylib.ToggleFullscreen();
 Raylib.SetTargetFPS(targetFps);
 Camera3D camera3DMain = Camera();
 Wepond ChoosenWepond = new Wepond();
-AWP awp = new AWP();
-ShootGun shootGun = new ShootGun();
 
 if (true)
 {
@@ -51,7 +49,7 @@ while (!Raylib.WindowShouldClose())
     LookAround();
     (framesSinceLastShoot, ChoosenWepond, reloadCooldown, playerBulletList) = Shoot(ChoosenWepond, camera3DMain, framesSinceLastShoot, playerBulletList, reloadCooldown);
     playerBulletList = BulletController(playerBulletList, rooms, ChoosenWepond);
-    (ChoosenWepond,reloadCooldown,wepondsAreLoaded) = ChangeWepond(ChoosenWepond, reloadCooldown, wepondsAreLoaded);
+    (ChoosenWepond,reloadCooldown) = ChangeWepond(ChoosenWepond, reloadCooldown);
     rooms = CreateRooms(rooms, camera3DMain, room);
     framesSinceLastShoot++;
     Raylib.EndDrawing();
@@ -317,13 +315,12 @@ static List<Blocks> LoadRoomFromJson(List<Blocks> room)
     }
     return room;
 }
-static (Wepond,int,bool) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown, bool wepondsAreLoaded)  
+static (Wepond,int) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown)  
 { 
-    if (!wepondsAreLoaded)
-    {
-        (Wepond, Wepond, Wepond) ak67, awp, shootGun = loadWeponds();
-        wepondsAreLoaded = true;
-    }
+
+    Wepond ak67     = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
+    Wepond awp      = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
+    Wepond shootGun = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\shootgun.txt"));
     if (Raylib.IsKeyDown(KeyboardKey.Z))
     {
         ChoosenWepond = ak67;
@@ -343,14 +340,6 @@ static (Wepond,int,bool) ChangeWepond(Wepond ChoosenWepond, int reloadCooldown, 
         reloadCooldown = 0;
     }
     return (ChoosenWepond,reloadCooldown);
-}
-static (Wepond, Wepond, Wepond) loadWeponds()
-{
-    Wepond ak67 = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\ak67.txt"));
-    Wepond awp = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\awp.txt"));
-    Wepond shootGun = JsonSerializer.Deserialize<Wepond>(File.ReadAllText("..\\..\\..\\weponds\\shootgun.txt"));
-    
-    return (ak67, awp, shootGun);
 }
 static Vector3 GetBulletAccuracy(Wepond ChoosenWepond)
 {
